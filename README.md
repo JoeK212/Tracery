@@ -6,5 +6,4 @@ The Help button explains the math behind every result at three levels, from stud
 
 It is a single index.html with no build step. Open it in a browser or deploy the folder to Netlify. The tool needs a tablet or desktop screen, but the Help guide also opens on a phone.
 
----
-Joe.K · [axisbim.io](https://axisbim.io)
+Joe.K · axisbim.io

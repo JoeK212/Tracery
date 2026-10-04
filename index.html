@@ -67,6 +67,11 @@ button:disabled{opacity:.4;cursor:default}
 button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
 select{background:var(--btnbg);border:1px solid var(--line);padding:6px 8px;color:var(--ink);max-width:100%}
 .work{flex:1;min-height:0;display:grid;grid-template-columns:318px 1fr}
+.work.side-off{grid-template-columns:minmax(0,1fr)}
+.work.side-off #side{display:none}
+.side-tools{display:flex;gap:6px;padding:8px 14px;border-bottom:1px solid var(--line)}
+.side-tools button{flex:1;padding:4px 8px;font-size:11px}
+#btnSide.on{border-color:var(--accent);color:var(--accent)}
 #side{overflow-y:auto;border-right:1px solid var(--line);background:var(--card);padding:4px 0 24px}
 .sec{border-bottom:1px solid var(--line)}
 .sec>summary{display:flex;align-items:center;cursor:pointer;list-style:none;padding:10px 14px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);user-select:none}
@@ -167,6 +172,7 @@ footer a:hover{color:var(--accent)}
 <div id="app">
   <header class="top">
     <div class="brand">TRACERY<small>window geometry</small></div>
+    <button id="btnSide" class="on" title="Show or hide the controls panel">Controls</button>
     <select id="presetSel" aria-label="Preset"></select>
     <span class="sp"></span>
     <button id="btnHelp" title="Guide and how the math works">Help</button>
@@ -224,7 +230,7 @@ footer a:hover{color:var(--accent)}
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-const APP_VERSION='1.7.1';
+const APP_VERSION='1.8.0';
 const SC=100;
 const TAU=Math.PI*2;
 const PHI=(1+Math.sqrt(5))/2;
@@ -237,7 +243,10 @@ const FOIL_OV=0.3;
 const STORE_KEY='tracery.state.v1';
 const THEME_KEY='tracery.theme';
 const UNITS_KEY='tracery.units';
+const SIDE_KEY='tracery.side';
+const SEC_KEY='tracery.secopen';
 let UNITS='metric';
+const secOpen={open:true,trac:false,bars:false,three:false};
 const CL=window.ClipperLib;
 
 const OPTS_ARCH=[['round','Semicircular (Romanesque)'],['segmental','Segmental'],['horseshoe','Horseshoe (Moorish)'],['pointed','Pointed — drop · equilateral · lancet'],['tudor','Four-centred (Tudor)'],['ogee','Ogee'],['multifoil','Multifoil / cusped'],['ellipse','Semi-elliptical'],['parabola','Parabolic'],['catenary','Catenary (Gaudí)'],['flat','Flat lintel'],['circle','Circular — oculus · rose']];
@@ -1649,6 +1658,7 @@ const HELP_START=`
 
 const HELP_CONTROLS=[
 ['Top bar',[
+['Controls','Shows or hides the controls panel so the two views get the full width. Collapse all and Expand all at the top of the panel fold the control groups. Both choices are remembered. Only Opening is open the first time.'],
 ['Presets','Loads a complete window. Each one replaces all current settings.'],
 ['Help','Opens this guide.'],
 ['Shuffle','Makes a new variation of the current head and pattern: proportions, number of lights, bar width and seeds change within sensible ranges. The size, units and 3D settings stay. Variations that cannot be drawn, or that leave almost no glass or almost no stone, are discarded and another is tried. Press it repeatedly to see many quick samples.'],
@@ -2062,9 +2072,9 @@ function fmtVal(p,v){
 
 function buildControls(){
   const side=document.getElementById('side');
-  let html='';
+  let html='<div class="side-tools"><button id="btnCollapse">Collapse all</button><button id="btnExpand">Expand all</button></div>';
   SECTIONS.forEach(sec=>{
-    html+=`<details class="sec" open><summary><span>${escapeHtml(sec.title)}</span><button class="info" data-help="${escapeAttr(sec.id)}" title="How this works">?</button></summary><div class="rows">`;
+    html+=`<details class="sec" data-sec="${escapeAttr(sec.id)}"${secOpen[sec.id]?' open':''}><summary><span>${escapeHtml(sec.title)}</span><button class="info" data-help="${escapeAttr(sec.id)}" title="How this works">?</button></summary><div class="rows">`;
     sec.p.forEach(p=>{
       if(p.t==='range'){
         html+=`<div class="row" data-k="${escapeAttr(p.k)}"><label for="c_${escapeAttr(p.k)}">${escapeHtml(p.l)}</label><span class="val" id="v_${escapeAttr(p.k)}"></span><input id="c_${escapeAttr(p.k)}" type="range" min="${p.min}" max="${p.max}" step="${p.step}"></div>`;
@@ -2079,6 +2089,19 @@ function buildControls(){
   side.innerHTML=html;
   side.addEventListener('input',onControl);
   side.addEventListener('change',onControl);
+  side.addEventListener('toggle',e=>{
+    const d=e.target;
+    if(d&&d.matches&&d.matches('details.sec')){
+      secOpen[d.getAttribute('data-sec')]=d.open;
+      saveSecOpen();
+    }
+  },true);
+  side.addEventListener('click',e=>{
+    const all=e.target.closest('#btnCollapse,#btnExpand');
+    if(!all)return;
+    const open=all.id==='btnExpand';
+    side.querySelectorAll('details.sec').forEach(d=>{d.open=open;});
+  });
 }
 
 function findParam(k){
@@ -2289,6 +2312,31 @@ function toggleUnits(){
   schedule(true);
   toast(UNITS==='imperial'?'Imperial — feet and inches':'Metric — millimetres');
 }
+function loadSecOpen(){
+  try{
+    const raw=localStorage.getItem(SEC_KEY);
+    if(raw){
+      const o=JSON.parse(raw);
+      Object.keys(secOpen).forEach(k=>{if(typeof o[k]==='boolean')secOpen[k]=o[k];});
+    }
+  }catch(e){}
+}
+function saveSecOpen(){
+  try{localStorage.setItem(SEC_KEY,JSON.stringify(secOpen));}catch(e){}
+}
+function applySide(on){
+  document.querySelector('.work').classList.toggle('side-off',!on);
+  document.getElementById('btnSide').classList.toggle('on',on);
+}
+function toggleSide(){
+  const turnOn=document.querySelector('.work').classList.contains('side-off');
+  applySide(turnOn);
+  try{localStorage.setItem(SIDE_KEY,turnOn?'on':'off');}catch(e){}
+  view.fit=true;
+  dirty2d=true;
+  requestAnimationFrame(()=>{resize3D();dirty2d=true;});
+}
+
 function toggleTheme(){
   const cur=document.documentElement.getAttribute('data-theme')==='light'?'light':'dark';
   const next=cur==='light'?'dark':'light';
@@ -2507,6 +2555,7 @@ function initUi(){
     toast('Reset to defaults');
   });
   document.getElementById('btnTheme').addEventListener('click',toggleTheme);
+  document.getElementById('btnSide').addEventListener('click',toggleSide);
   document.getElementById('btnUnits').addEventListener('click',toggleUnits);
   document.getElementById('btnFit').addEventListener('click',()=>{view.fit=true;dirty2d=true;});
   document.getElementById('btnView3d').addEventListener('click',resetView3d);
@@ -2532,8 +2581,12 @@ function start(){
   let units='metric';
   try{units=localStorage.getItem(UNITS_KEY)||'metric';}catch(e){}
   applyUnits(units);
+  loadSecOpen();
   buildControls();
   initUi();
+  let sideState='on';
+  try{sideState=localStorage.getItem(SIDE_KEY)||'on';}catch(e){}
+  applySide(sideState!=='off');
   syncControls();
   setupPointer();
   helpInit();
