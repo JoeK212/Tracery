@@ -65,10 +65,6 @@ check('modTerms reports the fit scale',/best\.scale=L\/best\.sum/.test(html));
 check('Mondrian never splits at one half',/const RAT=\[1\/4,1\/3,2\/5,3\/5,2\/3,3\/4\]/.test(html)&&!/RAT=\[[^\]]*0\.5[^\]]*\]/.test(html));
 check('Mondrian generator is seeded',/mulberry32\(Math\.round\(seed\)\*104729\+17\)/.test(html));
 check('light colours matched to cells by centroid test',/function lightColor\(/.test(html)&&/PointInPolygon/.test(html));
-check('Compare table written before canvases are sized',/cmTab'\)\.innerHTML=cmpTableHtml[\s\S]*?cmpScene\(document\.getElementById\('cvB'\)/.test(html));
-check('Compare Modulor aspect uses nominal series values',/c\.nw\|\|/.test(html));
-check('Compare overlay present and hidden by default',/<div class="cmp" id="cmp" hidden>/.test(html));
-check('Compare states generated study, not a painting',/not a measurement of any painting/.test(html));
 
 sectionHeader('v1.2.0 — imperial units');
 check('fmtImp, fmtLen and fmtLenS defined',/function fmtImp\(/.test(html)&&/function fmtLen\(/.test(html)&&/function fmtLenS\(/.test(html));
@@ -85,11 +81,53 @@ check('at least 18 help topics defined',topicIds.length>=18,String(topicIds.leng
 check('every help topic id is unique',new Set(topicIds).size===topicIds.length);
 const mapped=[...((html.match(/function helpTopicFor[\s\S]*?\n}\n/)||[''])[0].matchAll(/'([a-z0-9]+(?:-[a-z0-9]+)*)'/g))].map(m=>m[1]).filter(x=>['open','trac','bars','three'].indexOf(x)<0&&!/^(round|segmental|horseshoe|pointed|tudor|ogee|multifoil|ellipse|parabola|catenary|flat|circle|plain|mullions|geometric|rose|grid|mondrian|lattice)$/.test(x));
 check('every topic the ? buttons and Help links can open exists',mapped.every(x=>topicIds.indexOf(x)>=0),mapped.filter(x=>topicIds.indexOf(x)<0).join(', '));
-check('Compare Help button opens an existing topic',topicIds.indexOf('compare')>=0&&/openHelp\('math','compare'\)/.test(html));
 check('help ? button stops the click reaching the summary',/\.info'\);\s*if\(!b\)return;\s*e\.preventDefault\(\);\s*e\.stopPropagation\(\)/.test(html));
 check('help sits above the block screen',/\.help\{[^}]*z-index:120/.test(html)&&/\.block\{[^}]*z-index:100/.test(html));
 check('search input styled at 16px',/input\[type=search\][^}]*font-size:16px/.test(html));
 check('help level stored under its own key',/const HELP_LVL_KEY='tracery\.helplevel'/.test(html));
+
+sectionHeader('v1.4.0 — section cut');
+check('local clipping enabled on the renderer',/renderer\.localClippingEnabled=true/.test(html));
+check('section cut builds filled caps from Clipper intervals, not mesh slicing',/function sectionIntervals\(/.test(html)&&/function capMesh\(/.test(html));
+check('clipped stone materials also clip shadows',/clippingPlanes:clip,clipShadows:true/.test(html));
+check('glass and edge-line materials are clipped',(html.match(/clippingPlanes:clip/g)||[]).length>=4);
+check('Section button enables the cut and Front/Oblique disable it',/const want=name==='side'/.test(html)&&/S\.secOn!==want/.test(html));
+check('Section view targets the cut position',/const tx=name==='side'\?secCut\(\):0/.test(html));
+check('Section cut controls defined',/\{k:'secOn',l:'Section cut'/.test(html)&&/\{k:'secX'/.test(html));
+
+sectionHeader('v1.4.1 — reset view');
+check('Reset view button present in the 3D pane',/id="btnView3d"/.test(html)&&/addEventListener\('click',resetView3d\)/.test(html));
+check('Reset view clears section, explode and wireframe but not window parameters',/function resetView3d\(\)\{\s*S\.secOn=false;\s*S\.secX=0;\s*S\.explode=0;\s*S\.wire=false;/.test(html)&&!/function resetView3d\(\)\{[\s\S]*?S\.(arch|pattern|span|bar)=[\s\S]*?\n}\n\nfunction setView/.test(html));
+
+sectionHeader('v1.5.0 — Compare removed');
+check('no Compare overlay, button or functions remain',!/id="cmp"|id="btnCmp"|function cmp[A-Z]|cmpBuild|cmpMetrics/.test(html));
+check('no Compare settings in the default state',!/cmp(Seed|Splits|Series|Cols|Rows|Mirror|Phi|W|H):/.test(html));
+check('no Compare help topic or text',!/id:'compare'|Compare topic|Compare menu|Compare table/.test(html));
+check('Mondrian pattern and Modulor schemes still present',/function mondrianBuild\(/.test(html)&&/function modTerms\(/.test(html)&&/\['modBlue','Modulor Blue series'\]/.test(html));
+
+sectionHeader('v1.6.0 — shuffle');
+check('Reseed button and handler removed',!/btnSeed|>Reseed</.test(html));
+check('Shuffle, Shuffle all and Back wired',/btnShuffle'\)\.addEventListener\('click',\(\)=>doShuffle\(false\)\)/.test(html)&&/btnShuffleAll'\)\.addEventListener\('click',\(\)=>doShuffle\(true\)\)/.test(html)&&/btnBack'\)\.addEventListener\('click',shuffleBack\)/.test(html));
+check('shuffle candidates are validated before they are accepted',/function shuffleOk\(/.test(html)&&/if\(g\.warn\)return false/.test(html)&&/shuffleOk\(T,g\)/.test(html));
+check('shuffle restores the design if no valid candidate is found',/No valid variation found/.test(html)&&/S=snap;\s*if\(!found\)/.test(html));
+check('shuffle keeps a bounded history for Back',/shufHist\.push\(snap\)/.test(html)&&/shufHist\.length>20/.test(html));
+check('shuffle does not touch size, units or 3D depths',!/function shuffle(Head|Pattern|Bars)\([\s\S]*?(T\.span|T\.wallDepth|T\.tracDepth|T\.setback|T\.margin)[\s\S]*?\n}\n/.test(html));
+check('Math.random is confined to the shuffle helpers',(html.match(/Math\.random/g)||[]).length===(html.slice(html.indexOf('function pick(a)'),html.indexOf('function applyPreset')).match(/Math\.random/g)||[]).length);
+
+sectionHeader('v1.7.0 — DXF export');
+check('Export menu offers SVG, DXF 2D and DXF 3D',/id="exportSel"/.test(html)&&/value="dxf2d"/.test(html)&&/value="dxf3d"/.test(html)&&!/id="btnSvg"/.test(html));
+check('DXF is R12 with polylines closed by SEQEND and 3DFACE meshes',/g\(1,'AC1009'\)/.test(html)&&/g\(0,'SEQEND'\)/.test(html)&&/g\(0,'3DFACE'\)/.test(html));
+check('3D axes converted to CAD Z-up as a rotation (x, -z, y)',/\(-z\*u\.f\)\.toFixed\(u\.d\),\(y\*u\.f\)\.toFixed\(u\.d\)/.test(html));
+check('DXF units follow the display setting and are named in file name and comment',/function dxfUnits\(\)/.test(html)&&/'-2d-'\+u\.tag\+'\.dxf'/.test(html)&&/units: '\+u\.name/.test(html));
+check('construction circles are exported as CIRCLE entities',/g\(0,'CIRCLE'\)/.test(html));
+check('3D view and DXF share one extrusion routine',/function solidGeo\(/.test(html)&&/const geo=solidGeo\(shapes,D,b\)/.test(html)&&/solidGeo\(wallShapes,wallD,S\.chamfer\)/.test(html));
+
+sectionHeader('v1.7.1 — tests and help review');
+const hasTests=['regression.js','ui_smoke.py','README.md','package.json'].every(f=>fs.existsSync(path.join(dir,'tests',f)));
+check('tests folder holds the regression suite, smoke test, README and package.json',hasTests);
+check('test dependencies are pinned to the versions the page loads',(()=>{try{const p=JSON.parse(fs.readFileSync(path.join(dir,'tests','package.json'),'utf8'));return p.devDependencies['clipper-lib']==='6.4.2'&&p.devDependencies.three==='0.128.0'&&/clipper-lib@6\.4\.2/.test(html)&&/three@0\.128\.0/.test(html);}catch(e){return false;}})());
+check('Export topic exists in Help',/\{id:'export',t:'Exporting: SVG and DXF'/.test(html));
+check('Hub radius is explained under Reading the numbers',/\['Hub radius'/.test(html));
 
 sectionHeader('v1.0.0 — deploy files');
 check('netlify.toml publishes "."',/publish = "\."/.test(fs.readFileSync(path.join(dir,'netlify.toml'),'utf8')));

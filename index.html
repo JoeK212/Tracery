@@ -63,6 +63,7 @@ body{
 button,select,input{font-family:inherit;font-size:12px;color:var(--ink)}
 button{background:var(--btnbg);border:1px solid var(--line);padding:6px 11px;cursor:pointer;color:var(--ink)}
 button:hover{border-color:var(--accent)}
+button:disabled{opacity:.4;cursor:default}
 button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
 select{background:var(--btnbg);border:1px solid var(--line);padding:6px 8px;color:var(--ink);max-width:100%}
 .work{flex:1;min-height:0;display:grid;grid-template-columns:318px 1fr}
@@ -146,31 +147,6 @@ footer a:hover{color:var(--accent)}
 .lvlbar button:last-child{border-right:1px solid var(--line)}
 .lvlbar button.on{background:var(--accent);border-color:var(--accent);color:#fff}
 .lvlnote{color:var(--mute);font-size:12px;margin:2px 0 14px}
-.cmp{position:fixed;inset:0;z-index:45;background:var(--paper);display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-.cmp[hidden]{display:none}
-.cmp-top{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--card)}
-.cmp-top .sp{flex:1}
-.cmp-ctl{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--card)}
-.cmp-ctl label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mute)}
-.cmp-ctl label span{font-family:'Space Mono',monospace;color:var(--ink);min-width:20px}
-.cmp-ctl input[type=range]{width:92px;accent-color:var(--accent);margin:0}
-.cmp-ctl input[type=checkbox]{accent-color:var(--accent);margin:0}
-.cmp-views{flex:1 1 0;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:minmax(0,1fr);overflow:hidden}
-.cmp-v{display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden;border-right:1px solid var(--line)}
-.cmp-v:last-child{border-right:none}
-.cmp-h{padding:6px 12px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--mute);border-bottom:1px solid var(--line)}
-.cmp-h b{color:var(--ink)}
-.cmp-h small{display:block;letter-spacing:0;font-size:10px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cmp-stage{position:relative;flex:1 1 0;min-height:0;overflow:hidden}
-.cmp-stage canvas{position:absolute;inset:0;display:block}
-.cmp-tab{flex:0 0 auto;border-top:1px solid var(--line);background:var(--card);max-height:38%;overflow-y:auto;padding:8px 14px}
-.cmp-tab table{width:100%;border-collapse:collapse;font-size:12px}
-.cmp-tab th,.cmp-tab td{text-align:left;padding:3px 8px;border-bottom:1px dotted var(--line)}
-.cmp-tab th{color:var(--mute);font-weight:500;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
-.cmp-tab td.n{font-family:'Space Mono',monospace;font-size:11px;white-space:nowrap}
-.cmp-tab td.w{color:var(--mute);font-size:11px}
-.cmp-note{line-height:1.5;font-size:12px;padding:8px 0 2px}
-.cmp-note p{margin:0 0 6px}
 @media (max-width:760px){
   .help-body{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
   .help-nav{flex-direction:row;overflow-x:auto;overflow-y:hidden;border-right:none;border-bottom:1px solid var(--line);padding:0}
@@ -194,9 +170,10 @@ footer a:hover{color:var(--accent)}
     <select id="presetSel" aria-label="Preset"></select>
     <span class="sp"></span>
     <button id="btnHelp" title="Guide and how the math works">Help</button>
-    <button id="btnCmp" class="pri" title="Compare Mondrian and Modulor Blue series geometry">Compare</button>
-    <button id="btnSeed" title="New random seed for organic grids">Reseed</button>
-    <button id="btnSvg" title="Export 2D linework as SVG">SVG</button>
+    <button id="btnShuffle" class="pri" title="New variation of this head and pattern">Shuffle</button>
+    <button id="btnShuffleAll" title="New head and pattern as well">Shuffle all</button>
+    <button id="btnBack" title="Back to the design before the last shuffle" disabled>Back</button>
+    <select id="exportSel" aria-label="Export" title="Export the window"><option value="">Export…</option><option value="svg">SVG — 2D linework</option><option value="dxf2d">DXF — 2D elevation</option><option value="dxf3d">DXF — 3D model</option></select>
     <button id="btnReset">Reset</button>
     <button id="btnUnits" title="Switch between millimetres and feet-inches">Imperial</button>
     <button id="btnTheme">Light</button>
@@ -220,6 +197,7 @@ footer a:hover{color:var(--accent)}
             <button data-view="front">Front</button>
             <button data-view="obl">Oblique</button>
             <button data-view="side">Section</button>
+            <button id="btnView3d" title="Back to the oblique view, section cut off, layers together">Reset view</button>
           </div>
           <div class="stage" id="stage3d"></div>
         </section>
@@ -228,16 +206,6 @@ footer a:hover{color:var(--accent)}
     </div>
   </div>
   <footer id="footVersion"></footer>
-</div>
-<div class="cmp" id="cmp" hidden>
-  <div class="cmp-top"><div class="brand">COMPARE<small>Mondrian · Modulor</small></div><span class="sp"></span><button id="cmHelp">Help</button><button id="cmClose">Close</button></div>
-  <div class="cmp-ctl" id="cmCtl"></div>
-  <div class="cmp-views">
-    <div class="cmp-v"><div class="cmp-h"><b>MODULOR</b> <span id="cmTitleB">BLUE SERIES</span><small id="cmInfoB"></small></div><div class="cmp-stage"><canvas id="cvB"></canvas></div></div>
-    <div class="cmp-v"><div class="cmp-h"><b>OVERLAY</b> LINES COMPARED<small id="cmInfoO"></small></div><div class="cmp-stage"><canvas id="cvO"></canvas></div></div>
-    <div class="cmp-v"><div class="cmp-h"><b>MONDRIAN</b> NEOPLASTIC STYLE<small id="cmInfoM"></small></div><div class="cmp-stage"><canvas id="cvM"></canvas></div></div>
-  </div>
-  <div class="cmp-tab" id="cmTab"></div>
 </div>
 <div class="help" id="help" hidden>
   <div class="help-top"><div class="brand">HELP<small>guide · the math</small></div><span class="sp"></span><input type="search" id="helpSearch" placeholder="Search" aria-label="Search help"><button id="helpClose">Close</button></div>
@@ -256,7 +224,7 @@ footer a:hover{color:var(--accent)}
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-const APP_VERSION='1.3.0';
+const APP_VERSION='1.7.1';
 const SC=100;
 const TAU=Math.PI*2;
 const PHI=(1+Math.sqrt(5))/2;
@@ -311,9 +279,8 @@ const DEFAULT={
   latCell:'star',pitch:240,rot:0,starPts:8,starDepth:0.55,dual:true,
   mondSplits:8,mondSeed:4,polychrome:false,
   bar:42,frame:60,margin:350,
-  wallDepth:450,tracDepth:200,setback:120,chamfer:8,glassOp:0.55,stained:true,explode:0,edges:true,wire:false,sunAz:35,sunEl:45,
-  lyStone:true,lyGlass:true,lyCons:true,lyDims:true,
-  cmpSeed:4,cmpSplits:8,cmpSeries:'blue',cmpCols:3,cmpRows:4,cmpMirror:false,cmpPhi:true,cmpW:1130,cmpH:1830
+  wallDepth:450,tracDepth:200,setback:120,chamfer:8,glassOp:0.55,stained:true,explode:0,edges:true,wire:false,secOn:false,secX:0,sunAz:35,sunEl:45,
+  lyStone:true,lyGlass:true,lyCons:true,lyDims:true
 };
 
 const PRESETS=[
@@ -392,6 +359,8 @@ const SECTIONS=[
     {k:'explode',l:'Explode layers',t:'range',min:0,max:1500,step:10,u:'mm'},
     {k:'edges',l:'Edge lines',t:'check'},
     {k:'wire',l:'Wireframe',t:'check'},
+    {k:'secOn',l:'Section cut',t:'check'},
+    {k:'secX',l:'Cut position (0 = centreline)',t:'range',min:-1500,max:1500,step:10,u:'mm',show:s=>s.secOn},
     {k:'sunAz',l:'Sun azimuth',t:'range',min:-90,max:90,step:1,u:'°'},
     {k:'sunEl',l:'Sun elevation',t:'range',min:8,max:85,step:1,u:'°'}
   ]}
@@ -1399,15 +1368,55 @@ function polyShape(outer,holes){
   return sh;
 }
 
-function solid(shapes,D,b,mat){
+function solidGeo(shapes,D,b){
   let bb=Math.min(b,D/2.5);
   if(bb<0.5)bb=0;
   const geo=new THREE.ExtrudeGeometry(shapes,{depth:Math.max(D-2*bb,1),bevelEnabled:bb>0,bevelThickness:bb,bevelSize:bb,bevelOffset:-bb,bevelSegments:1,curveSegments:1,steps:1});
   geo.translate(0,0,bb);
+  return geo;
+}
+
+function solid(shapes,D,b,mat){
+  const geo=solidGeo(shapes,D,b);
   const m=new THREE.Mesh(geo,mat);
   m.castShadow=true;
   m.receiveShadow=true;
   return m;
+}
+
+function secCut(){
+  const ext=Math.max(Math.abs(G.rect.x0),Math.abs(G.rect.x1));
+  return Math.max(-ext,Math.min(ext,S.secX));
+}
+
+function sectionIntervals(paths,x){
+  const strip=rectPath(x-0.5,-100000,x+0.5,100000);
+  const r=boolOp(paths,[strip],CL.ClipType.ctIntersection);
+  const iv=[];
+  r.forEach(p=>{
+    if(CL.Clipper.Area(p)<0)return;
+    let lo=1e18,hi=-1e18;
+    p.forEach(q=>{const y=q.Y/SC;if(y<lo)lo=y;if(y>hi)hi=y;});
+    if(hi>lo)iv.push([lo,hi]);
+  });
+  iv.sort((a,b)=>a[0]-b[0]);
+  const m=[];
+  iv.forEach(v=>{
+    if(m.length&&v[0]-m[m.length-1][1]<0.6)m[m.length-1][1]=Math.max(m[m.length-1][1],v[1]);
+    else m.push([v[0],v[1]]);
+  });
+  return m;
+}
+
+function capMesh(y0,y1,z0,z1,b,color,x,lineMat){
+  const bb=Math.max(0,Math.min(b,(y1-y0)/2.5,(z1-z0)/2.5));
+  const pts=bb>0.4?[[z0+bb,y0],[z1-bb,y0],[z1,y0+bb],[z1,y1-bb],[z1-bb,y1],[z0+bb,y1],[z0,y1-bb],[z0,y0+bb]]:[[z0,y0],[z1,y0],[z1,y1],[z0,y1]];
+  const geo=new THREE.ShapeGeometry(new THREE.Shape(pts.map(q=>new THREE.Vector2(q[0],q[1]))));
+  geo.rotateY(-Math.PI/2);
+  geo.translate(x,0,0);
+  const mesh=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:new THREE.Color(color),side:THREE.DoubleSide}));
+  const line=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts.map(q=>new THREE.Vector3(x+0.6,q[1],q[0]))),lineMat);
+  return [mesh,line];
 }
 
 function disposeGroup(){
@@ -1424,7 +1433,9 @@ function build3D(){
   if(!G)return;
   if(!renderer)return;
   disposeGroup();
-  const stoneMat=new THREE.MeshStandardMaterial({color:0xc9bfa8,roughness:0.92,metalness:0,wireframe:S.wire});
+  const cutX=secCut();
+  const clip=S.secOn?[new THREE.Plane(new THREE.Vector3(-1,0,0),cutX)]:[];
+  const stoneMat=new THREE.MeshStandardMaterial({color:0xc9bfa8,roughness:0.92,metalness:0,wireframe:S.wire,clippingPlanes:clip,clipShadows:true});
   const hw=G.hw;
   const cham=Math.min(S.chamfer,hw*0.45);
   const wallShapes=G.surTree.Childs().length?treeShapes(G.surTree).map(s=>polyShape(s.outer,s.holes)):[];
@@ -1435,14 +1446,14 @@ function build3D(){
   wall.position.z=-wallD+E;
   group.add(wall);
   const tracD=S.tracDepth;
-  const tracMat=S.stained&&G.barColor?new THREE.MeshStandardMaterial({color:new THREE.Color(G.barColor),roughness:0.55,metalness:0,wireframe:S.wire}):stoneMat;
+  const tracMat=S.stained&&G.barColor?new THREE.MeshStandardMaterial({color:new THREE.Color(G.barColor),roughness:0.55,metalness:0,wireframe:S.wire,clippingPlanes:clip,clipShadows:true}):stoneMat;
   const trac=solid(tracShapes,tracD,cham,tracMat);
   trac.position.z=-S.setback-tracD;
   group.add(trac);
   const gt=Math.max(8,Math.min(24,tracD*0.12));
   G.lightShapes.forEach((s,i)=>{
     const color=S.stained?((G.lightColors&&G.lightColors[i])||STAIN[i%STAIN.length]):'#9cc4ff';
-    const mat=new THREE.MeshPhysicalMaterial({color:new THREE.Color(color),transparent:true,opacity:S.glassOp,roughness:0.15,metalness:0,side:THREE.DoubleSide,depthWrite:false,wireframe:S.wire});
+    const mat=new THREE.MeshPhysicalMaterial({color:new THREE.Color(color),transparent:true,opacity:S.glassOp,roughness:0.15,metalness:0,side:THREE.DoubleSide,depthWrite:false,wireframe:S.wire,clippingPlanes:clip});
     const geo=new THREE.ExtrudeGeometry([polyShape(s.outer,s.holes)],{depth:gt,bevelEnabled:false,curveSegments:1,steps:1});
     const m=new THREE.Mesh(geo,mat);
     m.position.z=-S.setback-tracD/2-gt/2-E;
@@ -1451,7 +1462,7 @@ function build3D(){
     group.add(m);
   });
   if(S.edges&&!S.wire){
-    const lm=new THREE.LineBasicMaterial({color:0x1b1830,transparent:true,opacity:0.45});
+    const lm=new THREE.LineBasicMaterial({color:0x1b1830,transparent:true,opacity:0.45,clippingPlanes:clip});
     const loops=(paths,z)=>{
       paths.forEach(pa=>{
         const pts=pa.map(q=>new THREE.Vector3(q.X/SC,q.Y/SC,z));
@@ -1463,6 +1474,20 @@ function build3D(){
     const wb=Math.min(S.chamfer,wallD/2.5),tb=Math.min(cham,tracD/2.5);
     loops(G.surround,E-wb+0.5);
     loops(G.tracery,-S.setback-tb+0.5);
+  }
+  if(S.secOn){
+    const lineMat=new THREE.LineBasicMaterial({color:0x14121f});
+    const gz0=-S.setback-tracD/2-gt/2-E;
+    const layers=[
+      [G.surround,-wallD+E,E,Math.min(S.chamfer,wallD/2.5),'#d9a441'],
+      [G.tracery,-S.setback-tracD,-S.setback,cham,'#d9a441'],
+      [G.lights,gz0,gz0+gt,0,'#8ec1ff']
+    ];
+    layers.forEach(L=>{
+      sectionIntervals(L[0],cutX).forEach(iv=>{
+        capMesh(iv[0],iv[1],L[1],L[2],L[3],L[4],cutX,lineMat).forEach(o=>{o.userData.sharedMat=false;group.add(o);});
+      });
+    });
   }
   updateSun();
   if(needCam){setView('obl');needCam=false;}
@@ -1482,6 +1507,18 @@ function updateSun(){
   sc.updateProjectionMatrix();
 }
 
+function resetView3d(){
+  S.secOn=false;
+  S.secX=0;
+  S.explode=0;
+  S.wire=false;
+  syncControls();
+  saveState();
+  schedule(false);
+  setView('obl');
+  toast('3D view reset');
+}
+
 function setView(name){
   if(!camera||!G)return;
   const cy=G.Ht/2;
@@ -1489,9 +1526,10 @@ function setView(name){
   const tz=-(S.wallDepth)/2;
   const half=Math.tan(camera.fov*Math.PI/360);
   const D=Math.max(G.Ht*1.45,W*1.45/camera.aspect)/(2*half);
-  controls.target.set(0,cy,tz);
+  const tx=name==='side'?secCut():0;
+  controls.target.set(tx,cy,tz);
   if(name==='front')camera.position.set(0,cy,D);
-  else if(name==='side')camera.position.set(Math.max(D,W*2),cy,tz);
+  else if(name==='side')camera.position.set(tx+Math.max(D,W*2),cy,tz);
   else camera.position.set(D*0.45,cy+G.Ht*0.12,D*0.9);
   camera.updateProjectionMatrix();
   controls.update();
@@ -1508,6 +1546,7 @@ function init3D(){
     return;
   }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  renderer.localClippingEnabled=true;
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.setClearColor(0x000000,0);
@@ -1576,323 +1615,6 @@ function diffs(a){
   for(let i=1;i<a.length;i++)o.push(a[i]-a[i-1]);
   return o;
 }
-function avg(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:null;}
-function uniqPos(a,L){
-  const t=a.slice().sort((x,y)=>x-y);
-  const o=[];
-  t.forEach(v=>{if(!o.length||v-o[o.length-1]>L*0.004)o.push(v);});
-  return o;
-}
-function clusterLens(vals,tol){
-  const t=vals.slice().sort((a,b)=>b-a);
-  const o=[];
-  t.forEach(v=>{if(!o.length||Math.abs(o[o.length-1]-v)/o[o.length-1]>tol)o.push(v);});
-  return o;
-}
-
-function cmpBuild(){
-  const W=S.cmpW>0?S.cmpW:S.span;
-  const H=S.cmpH>0?S.cmpH:(S.arch==='circle'?S.span:S.height);
-  const m=mondrianBuild(W,H,S.cmpSeed,Math.round(S.cmpSplits));
-  const mond={W,H,segs:m.segs,
-    xs:uniqPos([0,W].concat(m.segs.filter(g=>g.o==='v').map(g=>g.pos)),W),
-    ys:uniqPos([0,H].concat(m.segs.filter(g=>g.o==='h').map(g=>g.pos)),H),
-    cells:m.rects.map(r=>({x0:r.x0,y0:r.y0,x1:r.x1,y1:r.y1,hex:MOND_PAL[r.color],chroma:r.color!=='W'}))};
-  const series=S.cmpSeries;
-  const cols=Math.round(S.cmpCols),rows=Math.round(S.cmpRows);
-  const tx=modTerms(cols,series,W,S.cmpMirror),ty=modTerms(rows,series,H,S.cmpMirror);
-  const xs=[0],ys=[0];
-  tx.terms.forEach(t=>xs.push(xs[xs.length-1]+t*10*tx.scale));
-  ty.terms.forEach(t=>ys.push(ys[ys.length-1]+t*10*ty.scale));
-  const rng=mulberry32(Math.round(S.cmpSeed)*31+5);
-  const pool=[0,0,0,0,1,2,3];
-  const cells=[];
-  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
-    const ci=pool[Math.floor(rng()*pool.length)];
-    cells.push({x0:xs[i],y0:ys[j],x1:xs[i+1],y1:ys[j+1],nw:tx.terms[i],nh:ty.terms[j],hex:CORB_PAL[ci],chroma:ci>0});
-  }
-  const segs=[];
-  for(let i=1;i<cols;i++)segs.push({o:'v',pos:xs[i],a:0,b:H});
-  for(let j=1;j<rows;j++)segs.push({o:'h',pos:ys[j],a:0,b:W});
-  const mod={W,H,segs,xs,ys,cells,tx,ty,series};
-  return {mond,mod};
-}
-
-function nearV(v,t,tol){return Math.abs(v-t)/t<=tol;}
-
-function junctions(m){
-  const e=0.003*Math.max(m.W,m.H);
-  const vs=m.segs.filter(g=>g.o==='v'),hs=m.segs.filter(g=>g.o==='h');
-  let cross=0,tee=0;
-  vs.forEach(v=>hs.forEach(h=>{
-    if(v.pos<h.a-e||v.pos>h.b+e||h.pos<v.a-e||h.pos>v.b+e)return;
-    const vInt=h.pos>v.a+e&&h.pos<v.b-e;
-    const hInt=v.pos>h.a+e&&v.pos<h.b-e;
-    if(vInt&&hInt)cross++;
-    else if(vInt||hInt)tee++;
-  }));
-  return {cross,tee};
-}
-
-function mirrorScore(pos,L){
-  const p=pos.filter(v=>v>L*0.002&&v<L*0.998);
-  let k=0;
-  p.forEach(v=>{if(p.some(u=>Math.abs((L-u)-v)<=L*0.015))k++;});
-  return {k,n:p.length};
-}
-
-function goldenScore(pos,L){
-  const p=pos.filter(v=>v>L*0.002&&v<L*0.998);
-  let k=0;
-  p.forEach(v=>{const f=v/L;if(Math.abs(f-0.382)<=0.02||Math.abs(f-0.618)<=0.02)k++;});
-  return {k,n:p.length};
-}
-
-function cmpMetrics(m){
-  const dx=diffs(m.xs),dy=diffs(m.ys);
-  const rep=clusterLens(dx.concat(dy),0.03);
-  const ratios=[];
-  [dx,dy].forEach(d=>{for(let i=0;i+1<d.length;i++)ratios.push(Math.max(d[i],d[i+1])/Math.min(d[i],d[i+1]));});
-  const asc=rep.slice().sort((a,b)=>a-b);
-  let addN=0,addD=0;
-  for(let i=2;i<asc.length;i++){
-    addD++;
-    let ok=false;
-    for(let a=0;a<i&&!ok;a++)for(let b=a+1;b<i;b++){
-      if(Math.abs(asc[a]+asc[b]-asc[i])/asc[i]<=0.04){ok=true;break;}
-    }
-    if(ok)addN++;
-  }
-  const asp=m.cells.map(c=>{const w=c.nw||(c.x1-c.x0),h=c.nh||(c.y1-c.y0);return Math.max(w,h)/Math.min(w,h);});
-  const phiHit=asp.filter(a=>[1.618,2.618,4.236,6.854].some(t=>nearV(a,t,0.05))).length;
-  const ratHit=asp.filter(a=>[1,1.25,4/3,1.5,2,2.5,3,4].some(t=>nearV(a,t,0.05))).length;
-  const sx=mirrorScore(m.xs,m.W),sy=mirrorScore(m.ys,m.H);
-  const gx=goldenScore(m.xs,m.W),gy=goldenScore(m.ys,m.H);
-  let tot=0,col=0,cx=0,cy=0;
-  m.cells.forEach(c=>{
-    const a=(c.x1-c.x0)*(c.y1-c.y0);
-    tot+=a;
-    if(c.chroma){col+=a;cx+=a*(c.x0+c.x1)/2;cy+=a*(c.y0+c.y1)/2;}
-  });
-  const off=col>0?Math.hypot(cx/col-m.W/2,cy/col-m.H/2)/Math.hypot(m.W,m.H)*100:null;
-  const j=junctions(m);
-  return {
-    distinct:rep.length,
-    meanRatio:avg(ratios),
-    phiDev:ratios.length?avg(ratios.map(r=>Math.abs(r-PHI)/PHI))*100:null,
-    addN,addD,
-    phiPct:asp.length?phiHit/asp.length*100:null,
-    ratPct:asp.length?ratHit/asp.length*100:null,
-    symK:sx.k+sy.k,symN:sx.n+sy.n,
-    goldK:gx.k+gy.k,goldN:gx.n+gy.n,
-    cross:j.cross,tee:j.tee,
-    covPct:tot?col/tot*100:0,
-    off,
-    nCells:m.cells.length
-  };
-}
-
-function cmpOverlay(A,B){
-  const tol=0.02;
-  const flags=[];
-  let n=0,hit=0,offs=[];
-  B.segs.forEach((g,i)=>{
-    const L=g.o==='v'?B.W:B.H;
-    const pool=(g.o==='v'?A.xs:A.ys).filter(v=>v>L*0.002&&v<L*0.998);
-    let d=1e9;
-    pool.forEach(v=>{const e=Math.abs(v-g.pos)/L;if(e<d)d=e;});
-    flags[i]=d<=tol;
-    n++;
-    if(d<=tol)hit++;
-    if(d<1e8)offs.push(d*100);
-  });
-  return {flags,n,hit,meanOff:avg(offs)};
-}
-
-function fmtPct(v,d){return v===null||v===undefined?'—':v.toFixed(d||0)+'%';}
-function fmtNum(v,d){return v===null||v===undefined?'—':v.toFixed(d===undefined?2:d);}
-
-function cmpTableHtml(mm,mo,ov,A,B){
-  const rows=[
-    ['Distinct lengths',String(mm.distinct),String(mo.distinct),'Modulor reuses one series; Mondrian varies freely'],
-    ['Neighbour ratio',fmtNum(mm.meanRatio)+' : 1',fmtNum(mo.meanRatio)+' : 1','φ = 1.618'],
-    ['Deviation from φ',fmtPct(mm.phiDev,1),fmtPct(mo.phiDev,1),'mean over adjacent divisions'],
-    ['Additive lengths (a + b = c)',mm.addD?mm.addN+' / '+mm.addD:'—',mo.addD?mo.addN+' / '+mo.addD:'—','the Fibonacci property, within 4%'],
-    ['Cells at φᵏ aspect',fmtPct(mm.phiPct),fmtPct(mo.phiPct),'1.618, 2.618, 4.236, 6.854, ±5%; Modulor on nominal series values'],
-    ['Cells at simple rational aspect',fmtPct(mm.ratPct),fmtPct(mo.ratPct),'1, 5:4, 4:3, 3:2, 2, 5:2, 3, 4, ±5%'],
-    ['Mirror-symmetric lines',mm.symN?mm.symK+' / '+mm.symN:'—',mo.symN?mo.symK+' / '+mo.symN:'—','line has a partner across the centreline'],
-    ['Lines at golden sections',mm.goldN?mm.goldK+' / '+mm.goldN:'—',mo.goldN?mo.goldK+' / '+mo.goldN:'—','0.382 or 0.618 of the dimension, ±2%'],
-    ['Junctions: crosses · Ts',mm.cross+' · '+mm.tee,mo.cross+' · '+mo.tee,'crossing lines vs lines that stop'],
-    ['Colour coverage · centroid offset',fmtPct(mm.covPct)+' · '+fmtPct(mm.off,1),fmtPct(mo.covPct)+' · '+fmtPct(mo.off,1),'offset of coloured mass from centre, % of diagonal']
-  ];
-  let h='<table><thead><tr><th>Measure</th><th>Modulor</th><th>Mondrian</th><th>Reading</th></tr></thead><tbody>';
-  rows.forEach(r=>{h+=`<tr><td>${escapeHtml(r[0])}</td><td class="n">${escapeHtml(r[1])}</td><td class="n">${escapeHtml(r[2])}</td><td class="w">${escapeHtml(r[3])}</td></tr>`;});
-  h+='</tbody></table>';
-  const sName=S.cmpSeries==='red'?'Red':'Blue';
-  h+='<div class="cmp-note">';
-  h+=`<p><b>Modulor ${sName}.</b> ${mm.distinct} distinct lengths drawn from one series, in which each term is the sum of the two before it. Neighbouring divisions differ by ${fmtNum(mm.meanRatio)} : 1 on average, ${fmtPct(mm.phiDev,1)} from φ, because the printed series values are rounded to whole centimetres. Every line runs edge to edge, so every junction is a cross (${mm.cross}) and none is a T.</p>`;
-  h+=`<p><b>Mondrian-style composition.</b> ${mo.distinct} distinct lengths with ${mo.addD?mo.addN+' of '+mo.addD:'no'} additive relationships; neighbours differ by ${fmtNum(mo.meanRatio)} : 1 on average, ${fmtPct(mo.phiDev,1)} from φ. ${fmtPct(mo.ratPct)} of its fields have simple rational proportions against ${fmtPct(mo.phiPct)} at φᵏ. Lines stop at other lines (${mo.tee} Ts, ${mo.cross} crosses), and the composition is balanced by colour weight, with the coloured mass sitting ${fmtPct(mo.off,1)} of the diagonal off centre, not by a repeating proportion.</p>`;
-  h+=`<p><b>Overlay.</b> ${ov.hit} of ${ov.n} Mondrian line segments fall within 2% of a Modulor line on the same axis, with a mean nearest-line offset of ${fmtPct(ov.meanOff,1)} of the dimension. The two systems share an opening and a vocabulary of rectangles but not a rule: Modulor fixes the ratio and lets the layout follow, Mondrian fixes the balance and lets the ratios fall where they need to.</p>`;
-  h+=`<p style="color:var(--mute)">Figures describe the composition on screen (seed ${Math.round(S.cmpSeed)}, ${Math.round(S.cmpSplits)} splits). It is a generated study in Mondrian's manner, not a measurement of any painting.</p>`;
-  h+='</div>';
-  return h;
-}
-
-function cmpScene(cv,model,mode,ov,other){
-  const st=cv.parentElement;
-  const w=st.clientWidth,h=st.clientHeight;
-  if(!w||!h)return;
-  const dpr=window.devicePixelRatio||1;
-  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){
-    cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
-    cv.style.width=w+'px';cv.style.height=h+'px';
-  }
-  const x=cv.getContext('2d');
-  x.setTransform(dpr,0,0,dpr,0,0);
-  x.clearRect(0,0,w,h);
-  const cs=getComputedStyle(document.documentElement);
-  const col=n=>cs.getPropertyValue(n).trim();
-  const W=model.W,H=model.H,pad=UNITS==='imperial'?64:44;
-  const k=Math.min((w-2*pad)/W,(h-2*pad)/H);
-  const ox=(w-W*k)/2,oy=(h-H*k)/2;
-  const X=v=>ox+v*k,Y=v=>oy+(H-v)*k;
-  const lw=Math.max(2.5,Math.min(14,S.bar*k));
-  const line=(g,color,width,dash)=>{
-    x.beginPath();
-    if(g.o==='v'){x.moveTo(X(g.pos),Y(g.a));x.lineTo(X(g.pos),Y(g.b));}
-    else{x.moveTo(X(g.a),Y(g.pos));x.lineTo(X(g.b),Y(g.pos));}
-    x.strokeStyle=color;x.lineWidth=width;x.setLineDash(dash||[]);x.stroke();x.setLineDash([]);
-  };
-  if(mode==='ovl'){
-    x.fillStyle=col('--card');
-    x.fillRect(X(0),Y(H),W*k,H*k);
-    x.strokeStyle=col('--line');x.lineWidth=1.5;
-    x.strokeRect(X(0),Y(H),W*k,H*k);
-    if(S.cmpPhi){
-      [0.382,0.618].forEach(f=>{
-        line({o:'v',pos:W*f,a:0,b:H},col('--dim'),1,[5,4]);
-        line({o:'h',pos:H*f,a:0,b:W},col('--dim'),1,[5,4]);
-      });
-    }
-    other.mod.segs.forEach(g=>line(g,'#5B9BFF',3.5));
-    other.mond.segs.forEach((g,i)=>line(g,ov.flags[i]?'#4FD18B':'#F0584A',ov.flags[i]?4.5:2.5));
-    x.font='10px "Space Mono",monospace';
-    x.textAlign='left';
-    const lg=[['#5B9BFF','Modulor'],['#F0584A','Mondrian'],['#4FD18B','within 2%']];
-    lg.forEach((l,i)=>{x.fillStyle=l[0];x.fillRect(10,10+i*15,14,3);x.fillStyle=col('--mute');x.fillText(l[1],30,14+i*15);});
-    if(S.cmpPhi){x.fillStyle=col('--dim');x.fillText('┄ φ sections',10,14+lg.length*15);}
-    return;
-  }
-  model.cells.forEach(c=>{
-    x.fillStyle=c.hex;
-    x.fillRect(X(c.x0),Y(c.y1),(c.x1-c.x0)*k,(c.y1-c.y0)*k);
-  });
-  const dark='#151515';
-  model.segs.forEach(g=>line(g,dark,lw));
-  x.strokeStyle=dark;x.lineWidth=lw;
-  x.strokeRect(X(0),Y(H),W*k,H*k);
-  x.fillStyle=col('--dim');
-  x.font='10px "Space Mono",monospace';
-  const dx=diffs(model.xs),dy=diffs(model.ys);
-  x.textAlign='center';
-  dx.forEach((d,i)=>{
-    if(d*k<(UNITS==='imperial'?56:34))return;
-    x.fillText(fmtLenS(d),X((model.xs[i]+model.xs[i+1])/2),oy-8-lw/2);
-  });
-  x.textAlign='right';
-  dy.forEach((d,j)=>{
-    if(d*k<16)return;
-    x.fillText(fmtLenS(d),ox-8-lw/2,Y((model.ys[j]+model.ys[j+1])/2)+3);
-  });
-}
-
-function cmpInfoText(m){
-  return 'cols '+fmtTerms(m.tx.terms,m.tx.scale)+' · rows '+fmtTerms(m.ty.terms,m.ty.scale);
-}
-
-function cmpUpdate(){
-  const el=document.getElementById('cmp');
-  if(el.hidden)return;
-  const {mond,mod}=cmpBuild();
-  const mm=cmpMetrics(mod),mo=cmpMetrics(mond);
-  const ov=cmpOverlay(mod,mond);
-  document.getElementById('cmTitleB').textContent=(S.cmpSeries==='red'?'RED':'BLUE')+' SERIES';
-  document.getElementById('cmInfoB').textContent=cmpInfoText(mod);
-  document.getElementById('cmInfoM').textContent=fmtLen(mond.W)+' × '+fmtLen(mond.H)+' · '+mond.cells.length+' fields · seed '+Math.round(S.cmpSeed);
-  document.getElementById('cmInfoO').textContent=ov.hit+' of '+ov.n+' Mondrian segments within 2% of a Modulor line';
-  document.getElementById('cmTab').innerHTML=cmpTableHtml(mm,mo,ov,mod,mond);
-  cmpScene(document.getElementById('cvB'),mod,'mod');
-  cmpScene(document.getElementById('cvM'),mond,'mond');
-  cmpScene(document.getElementById('cvO'),mond,'ovl',ov,{mod,mond});
-}
-
-function cmpSyncControls(){
-  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v;};
-  set('cm_series',S.cmpSeries);
-  set('cm_w',S.cmpW);set('cm_h',S.cmpH);
-  set('cm_cols',S.cmpCols);set('cm_rows',S.cmpRows);
-  set('cm_splits',S.cmpSplits);set('cm_seed',S.cmpSeed);
-  document.getElementById('cm_mirror').checked=!!S.cmpMirror;
-  document.getElementById('cm_phi').checked=!!S.cmpPhi;
-  document.getElementById('cv_cols').textContent=S.cmpCols;
-  document.getElementById('cv_rows').textContent=S.cmpRows;
-  document.getElementById('cv_splits').textContent=S.cmpSplits;
-  document.getElementById('cv_seed').textContent=S.cmpSeed;
-}
-
-function cmpFillDims(){
-  const opts=[['0','Window']].concat([43,53,70,86,113,140,183,226,296,366].map(v=>[String(v*10),UNITS==='imperial'?fmtImp(v*10):v+' cm'])).map(o=>`<option value="${escapeAttr(o[0])}">${escapeHtml(o[1])}</option>`).join('');
-  ['cm_w','cm_h'].forEach(id=>{document.getElementById(id).innerHTML=opts;});
-}
-
-function cmpOpen(){
-  document.getElementById('cmp').hidden=false;
-  cmpSyncControls();
-  requestAnimationFrame(cmpUpdate);
-}
-function cmpClose(){
-  document.getElementById('cmp').hidden=true;
-}
-
-function cmpInit(){
-  const ctl=document.getElementById('cmCtl');
-  ctl.innerHTML=`<label>Series <select id="cm_series"><option value="blue">Blue</option><option value="red">Red</option></select></label>
-  <label>Columns <input type="range" id="cm_cols" min="2" max="8" step="1"><span id="cv_cols"></span></label>
-  <label>Rows <input type="range" id="cm_rows" min="2" max="8" step="1"><span id="cv_rows"></span></label>
-  <label><input type="checkbox" id="cm_mirror"> mirror</label>
-  <label>Mondrian splits <input type="range" id="cm_splits" min="3" max="16" step="1"><span id="cv_splits"></span></label>
-  <label>Seed <input type="range" id="cm_seed" min="1" max="999" step="1"><span id="cv_seed"></span></label>
-  <button id="cm_reseed">Reseed</button>
-  <label><input type="checkbox" id="cm_phi"> φ sections</label>
-  <label>Width <select id="cm_w"></select></label>
-  <label>Height <select id="cm_h"></select></label>
-  <button id="cm_useB">Use Modulor in window</button>
-  <button id="cm_useM">Use Mondrian in window</button>`;
-  const num=(id,key)=>document.getElementById(id).addEventListener('input',e=>{S[key]=parseFloat(e.target.value);cmpSyncControls();saveState();cmpUpdate();});
-  num('cm_cols','cmpCols');num('cm_rows','cmpRows');num('cm_splits','cmpSplits');num('cm_seed','cmpSeed');
-  document.getElementById('cm_series').addEventListener('change',e=>{S.cmpSeries=e.target.value;saveState();cmpUpdate();});
-  document.getElementById('cm_mirror').addEventListener('change',e=>{S.cmpMirror=e.target.checked;saveState();cmpUpdate();});
-  document.getElementById('cm_phi').addEventListener('change',e=>{S.cmpPhi=e.target.checked;saveState();cmpUpdate();});
-  document.getElementById('cm_reseed').addEventListener('click',()=>{S.cmpSeed=1+Math.floor(Math.random()*998);cmpSyncControls();saveState();cmpUpdate();});
-  cmpFillDims();
-  document.getElementById('cm_w').addEventListener('change',e=>{S.cmpW=parseInt(e.target.value,10);saveState();cmpUpdate();});
-  document.getElementById('cm_h').addEventListener('change',e=>{S.cmpH=parseInt(e.target.value,10);saveState();cmpUpdate();});
-  document.getElementById('cm_useB').addEventListener('click',()=>{
-    const sch=S.cmpSeries==='red'?'modRed':'modBlue';
-    Object.assign(S,{arch:'flat',span:S.cmpW>0?S.cmpW:S.span,height:S.cmpH>0?S.cmpH:S.height,pattern:'grid',scheme:sch,rowScheme:sch,cols:S.cmpCols,rows:S.cmpRows,sym:!!S.cmpMirror,warp:0,polychrome:true,stained:true,seed:S.cmpSeed});
-    view.fit=true;syncControls();saveState();schedule(true);cmpClose();
-    toast('Modulor grid applied to window');
-  });
-  document.getElementById('cm_useM').addEventListener('click',()=>{
-    Object.assign(S,{arch:'flat',span:S.cmpW>0?S.cmpW:S.span,height:S.cmpH>0?S.cmpH:S.height,pattern:'mondrian',mondSplits:S.cmpSplits,mondSeed:S.cmpSeed,bar:Math.max(S.bar,40),stained:true});
-    view.fit=true;syncControls();saveState();schedule(true);cmpClose();
-    toast('Mondrian composition applied to window');
-  });
-  document.getElementById('cmClose').addEventListener('click',cmpClose);
-  document.getElementById('btnCmp').addEventListener('click',cmpOpen);
-  window.addEventListener('resize',cmpUpdate);
-}
-
 const HELP_TABS=[['start','Start here'],['controls','Controls'],['math','How the math works'],['numbers','Reading the numbers'],['glossary','Glossary'],['limits','Limits']];
 const HELP_LEVELS=[['s','Student'],['d','Designer'],['p','Professional']];
 const HELP_LVL_KEY='tracery.helplevel';
@@ -1909,15 +1631,17 @@ const HELP_START=`
 <li>Change the <b>Pattern</b> under Tracery to fill the opening differently.</li>
 <li>Adjust <b>Bar width</b> to make the stone heavier or lighter.</li>
 <li>Drag in the 3D view to orbit. Use <b>Explode layers</b> to pull the wall, tracery and glass apart.</li>
-<li>Press <b>Compare</b> to set a Modulor grid against a Mondrian composition on the same opening.</li>
+<li>Press <b>Shuffle</b> for a new variation and <b>Back</b> to undo it.</li>
+<li>Use <b>Export</b> to save the window as SVG or DXF.</li>
 </ol>
-<h2>Five things to try</h2>
+<h2>Six things to try</h2>
 <ul>
 <li><b>Lancet to drop.</b> Head: Pointed. Drag <i>Radius ÷ span</i> from 0.5 (round) through 1.0 (equilateral) to 2.0 (tall lancet).</li>
 <li><b>Fit circles into a gap.</b> Pattern: Geometric. Raise <i>Packed circles</i> and watch each one grow until it touches its neighbours.</li>
 <li><b>Count the petals.</b> Head: Circular, Pattern: Rose. Move <i>Petals</i> from 6 to 16 and see the petal radius shrink.</li>
-<li><b>Same opening, two systems.</b> Press Compare and read the measures table.</li>
+<li><b>Cut through it.</b> Press Section in the 3D pane to see the wall, tracery and glass in profile.</li>
 <li><b>Light and shadow.</b> In 3D form, move <i>Sun azimuth</i> and <i>Sun elevation</i> and watch the tracery shade the glass.</li>
+<li><b>Let it surprise you.</b> Press <i>Shuffle all</i> a few times. Anything you like can be refined by hand, and Back returns to what you had.</li>
 </ul>
 <h2>Three reading levels</h2>
 <p>The <b>How the math works</b> tab explains each result at three levels. <b>Student</b> uses everyday language and pictures. <b>Designer</b> adds the vocabulary and controls you would use in practice. <b>Professional</b> gives the equations, tolerances and algorithms. Every topic ends with a box that plugs your current window into the formulas.</p>
@@ -1926,10 +1650,11 @@ const HELP_START=`
 const HELP_CONTROLS=[
 ['Top bar',[
 ['Presets','Loads a complete window. Each one replaces all current settings.'],
-['Compare','Opens the side-by-side Modulor and Mondrian study.'],
 ['Help','Opens this guide.'],
-['Reseed','Picks a new random seed for the organic warp and the Mondrian composition.'],
-['SVG','Downloads the 2D linework in millimetres, with construction circles if that layer is on.'],
+['Shuffle','Makes a new variation of the current head and pattern: proportions, number of lights, bar width and seeds change within sensible ranges. The size, units and 3D settings stay. Variations that cannot be drawn, or that leave almost no glass or almost no stone, are discarded and another is tried. Press it repeatedly to see many quick samples.'],
+['Shuffle all','As Shuffle, but also picks a new head and a new pattern and varies the height by up to about 10%.'],
+['Back','Steps back to the design before the last shuffle, up to 20 steps. Presets and manual changes are not recorded, so Back only returns to designs a shuffle replaced.'],
+['Export','SVG: 2D linework in millimetres. DXF 2D elevation: the opening, wall, tracery and glass outlines plus the construction circles and lines, on separate layers. DXF 3D model: the wall, tracery and glass as triangle meshes. DXF files follow the Metric or Imperial setting and are written in millimetres or inches.'],
 ['Reset','Returns every setting to its default after asking you to confirm.'],
 ['Imperial / Metric','Switches every displayed length between feet-inches and millimetres. The window itself does not change.'],
 ['Light / Dark','Switches the colour theme.']]],
@@ -1966,11 +1691,11 @@ const HELP_CONTROLS=[
 ['Glass opacity and Colour fills','How see-through the glass is, and whether it takes stained tints, Mondrian colours or Corbusier polychromy.'],
 ['Explode layers','Slides the wall forward and the glass back so each layer can be seen.'],
 ['Edge lines and Wireframe','Draw the outlines of the stone, or show the mesh.'],
+['Section cut and Cut position','Slices the model on a vertical plane and removes everything on one side. Cut position moves the plane left or right of the centreline. The Section button turns the cut on and views it from the side. Front and Oblique turn it off.'],
 ['Sun azimuth and elevation','Direction of the light that casts shadows from the tracery onto the glass.']]],
 ['Views',[
 ['2D layers','Toggle stone, glass, construction geometry and dimension lines. Drag to pan, scroll or pinch to zoom, double-click or press Fit to reset.'],
-['3D view','Drag to orbit, scroll to zoom. Front, Oblique and Section snap to standard views.'],
-['Compare controls','Choose Blue or Red series, grid size, mirror, Mondrian splits and seed, window size from Modulor values, and apply either system to the main window.']]]
+['3D view','Drag to orbit, scroll to zoom. Front and Oblique snap to standard views. Section cuts the model along a vertical plane and shows the profile through the wall, tracery and glass in solid colour. Reset view returns to the oblique view with the section cut off, wireframe off and the layers together.'],]]
 ];
 
 const HELP_NUMBERS=[
@@ -1987,11 +1712,11 @@ const HELP_NUMBERS=[
 ['Bar · frame','Bar width and the effective frame width, which is never less than half a bar.'],
 ['Packed circles','How many circles were placed and their radii as a fraction of the span.'],
 ['Petal radius','For rose windows, petal radius as a fraction of the rose radius, from the formula in the rose topic.'],
+['Hub radius','For wheel windows, the central hub as a fraction of the rose radius.'],
 ['Grid, Columns, Rows','Grid size. With a Modulor scheme, the series terms used (in cm, or inches in imperial) and the scale factor needed to fit your opening.'],
-['Lattice pitch, Cells','Tile size actually used and the number of tiles. The pitch grows if the tiling would be too dense.'],
+['Lattice pitch, Cells','Tile size actually used and the number of tiles before clipping. The pitch grows if the tiling would be too dense.'],
 ['Composition','Number of fields in a Mondrian composition and its seed.'],
-['Notice','Appears when something could not be drawn as asked, for example parameters with no valid arch, or bars wider than the cells.'],
-['Compare table','Ten measures of how each system uses proportion. See the Compare topic under How the math works.']
+['Notice','Appears when something could not be drawn as asked, for example parameters with no valid arch, or bars wider than the cells.']
 ];
 
 const HELP_GLOSSARY=[
@@ -2038,11 +1763,12 @@ const HELP_LIMITS=[
 'Four-centred and ogee heads need compatible rise, corner radius and junction angle. When no curve exists the tool shows an equilateral arch and says so in the analysis strip.',
 'Packed circles are placed greedily, largest first. That gives good-looking tracery but is not the mathematically optimal packing.',
 'Curves are drawn as short straight segments about 4° of arc each. Dimensions are exact to the segment, not to the true curve.',
-'Lattice patterns cap at about 420 tiles. Beyond that the pitch is enlarged and the analysis strip shows the pitch actually used.',
+'Lattice patterns cap the tile density at about 420 pitch-squares of window area. Beyond that the pitch is enlarged and the analysis strip shows the pitch actually used.',
 'Modulor fits scale a run of series values to your opening. A scale factor far from 1.000 means the result is proportioned like the Modulor but not dimensioned like it.',
-'The Mondrian composition is a generated study in his manner. It is not a copy or measurement of any painting, and its Compare figures describe only the composition on screen.',
+'The Mondrian composition is a generated study in his manner. It is not a copy or measurement of any painting.',
 'Imperial display rounds to 1/16 inch below 24 inches and 1/8 inch above. Values are converted from millimetres, which remain the working unit.',
-'3D glass is a simple translucent slab. Colours are illustrative, not a daylight or colour-rendering simulation.'
+'3D glass is a simple translucent slab. Colours are illustrative, not a daylight or colour-rendering simulation.',
+'DXF export is the older AutoCAD R12 format so that nearly any CAD program opens it. Curves are polylines of short straight segments (about 4° of arc), except construction circles, which are true circles. The 3D file is a triangle mesh on three layers, not solids, and individual glass colours are not carried across. It always exports the complete model, ignoring the section cut and exploded layers.'
 ];
 
 const HELP_TOPICS=[
@@ -2114,7 +1840,7 @@ live:()=>{
 
 {id:'modulor',t:'Modulor Red and Blue series',
 s:`<p>Le Corbusier built a ruler from the golden ratio and the height of a standing person, 183 cm. It has two scales, Red and Blue. Each step is about 1.6 times the last, and any two neighbouring steps add up to the next. TRACERY cuts your opening into pieces using steps from this ruler.</p>`,
-d:`<p>Red runs 4, 6, 10, 16, 27, 43, 70, 113, 183, 296, 479 cm. Blue is double: 8, 13, 20, 33, 53, 86, 140, 226, 366, 592, 958 cm. For n divisions the tool finds the run of n consecutive terms whose total is closest to your opening, then scales it to fit. The <b>scale factor</b> shows how far you are from true Modulor. 1.000 is exact, 1.066 means 6.6% oversize. Choose opening sizes from the Compare menu (113, 183, 226 cm and so on) to get close to 1.</p>`,
+d:`<p>Red runs 4, 6, 10, 16, 27, 43, 70, 113, 183, 296, 479 cm. Blue is roughly double: 8, 13, 20, 33, 53, 86, 140, 226, 366, 592, 958 cm. For n divisions the tool finds the run of n consecutive terms whose total is closest to your opening, then scales it to fit. The <b>scale factor</b> shows how far you are from true Modulor. 1.000 is exact, 1.066 means 6.6% oversize. Choose opening sizes that are themselves series values (113, 183, 226 cm and so on) to get close to 1.</p>`,
 p:`<p>The series are Fibonacci-like, tₖ ≈ t₀φᵏ, rounded to whole centimetres, so additivity tₖ + tₖ₊₁ = tₖ₊₂ holds only approximately (16 + 27 = 43, but 10 + 16 = 26 against 27).</p><p>Fit: for each start index i, <code>S_i = 10·Σ terms</code> (mm). Choose i minimising |S_i − L| / L, then <code>scale = L / S_i</code>. Mirror mode fits ⌈n/2⌉ terms and reflects them. Different axes get different scales.</p>`,
 live:()=>{
   const g=['mullions','geometric','grid'].includes(S.pattern);
@@ -2173,7 +1899,7 @@ live:()=>{
 
 {id:'lattice',t:'Lattices, jali and tilings',
 s:`<p>Fill the opening with a repeating tile: squares, hexagons, octagons with little squares between them, or stars. The tool then cuts the tiling to the shape of your window.</p>`,
-d:`<p><b>Pitch</b> is the tile size and <b>Rotation</b> turns the whole pattern. <b>Star points</b> and <b>Star depth</b> shape the star, and <b>Diamond lights</b> adds small lights between stars. Tiles cut by the edge of the opening become partial lights, and tiny slivers are dropped. A smaller pitch gives more lights. If the tiling would pass about 420 tiles the pitch is enlarged.</p>`,
+d:`<p><b>Pitch</b> is the tile size and <b>Rotation</b> turns the whole pattern. <b>Star points</b> and <b>Star depth</b> shape the star, and <b>Diamond lights</b> adds small lights between stars. Tiles cut by the edge of the opening become partial lights, and tiny slivers are dropped. A smaller pitch gives more lights. If the window is more than about 420 pitch-squares in area, the pitch is enlarged until it is not.</p>`,
 p:`<p>Square: side p. Hexagon (pointy-top): circumradius <code>p/√3</code>, rows 1.5R apart, odd rows offset p/2. Octagon plus square (4.8.8): octagons of circumradius <code>p / (2cos 22.5°)</code> at lattice points, diamonds of edge <code>a = p/(1 + √2)</code> and circumradius a/√2 at (p/2, p/2). Star: outer radius p/2 (0.96·p/2 unless n is a multiple of 4), inner radius = depth × outer, so tips touch when n is divisible by 4. The lattice is rotated about the window centre.</p>`,
 live:()=>{
   if(S.pattern!=='lattice')return 'Choose the Lattice pattern to see your numbers here.';
@@ -2183,8 +1909,8 @@ live:()=>{
 
 {id:'build3d',t:'How the 3D model is built',
 s:`<p>The flat shapes are pushed out into thickness. The wall around the opening is one slab. The stone bars sit behind the face of the wall, and thin coloured glass sits in the middle of the bars. Chamfer softens the edges.</p>`,
-d:`<p>Set <b>Wall thickness</b>, <b>Tracery depth</b> and <b>Setback</b> to model a deep reveal. <b>Explode layers</b> slides the wall forward and the glass back so you can see each part. <b>Sun azimuth and elevation</b> light the scene and cast shadows from the tracery onto the glass. The glass receives shadows but does not cast them. <b>Colour fills</b> choose stained tints, Mondrian colours or Corbusier polychromy.</p>`,
-p:`<p>Surround: extrude(R \\ O, D_w) from z = −D_w to 0. Tracery: extrude(T, D_t) starting at z = −setback − D_t. Glass: a slab of thickness <code>g = clamp(0.12·D_t, 8, 24)</code> mm centred in the tracery depth.</p><p>Chamfer b uses bevelThickness = bevelSize = b and bevelOffset = −b, so the profile stays at nominal size and the extrusion depth drops by 2b. For tracery b is limited to 0.45 × (w/2) so narrow bars keep a flat face, and to D/2.5. Hole nesting comes from Clipper's PolyTree and triangulation uses earcut.</p>`,
+d:`<p>Set <b>Wall thickness</b>, <b>Tracery depth</b> and <b>Setback</b> to model a deep reveal. <b>Explode layers</b> slides the wall forward and the glass back so you can see each part. <b>Sun azimuth and elevation</b> light the scene and cast shadows from the tracery onto the glass. The glass receives shadows but does not cast them. <b>Colour fills</b> choose stained tints, Mondrian colours or Corbusier polychromy.</p><p>The <b>Section</b> button cuts the model on a vertical plane and fills the cut faces in solid colour, ochre for stone and blue for glass, so you can read the wall thickness, the setback and the bar depth directly.</p>`,
+p:`<p>Surround: extrude(R \\ O, D_w) from z = −D_w to 0. Tracery: extrude(T, D_t) starting at z = −setback − D_t. Glass: a slab of thickness <code>g = clamp(0.12·D_t, 8, 24)</code> mm centred in the tracery depth.</p><p>Chamfer b uses bevelThickness = bevelSize = b and bevelOffset = −b, so the profile stays at nominal size and the extrusion depth drops by 2b. For tracery b is limited to 0.45 × (w/2) so narrow bars keep a flat face, and to D/2.5. Hole nesting comes from Clipper's PolyTree and triangulation uses earcut.</p><p>Section: a clipping plane keeps x ≤ x_c. The cut faces are built from the model, not read from the mesh. For each layer the polygon set is intersected with a 1 mm strip at x = x_c, giving the stone and glass intervals [y₀, y₁] along that line. Each interval becomes a filled profile across the layer's depth, with the same chamfer as the solid.</p>`,
 live:()=>`Wall ${fmtLen(S.wallDepth)}, tracery ${fmtLen(S.tracDepth)} set back ${fmtLen(S.setback)}, glass ${fmtLen(Math.max(8,Math.min(24,S.tracDepth*0.12)))} thick, chamfer ${fmtLen(Math.min(S.chamfer,G.hw*0.45))} on the tracery.`},
 
 {id:'glazing',t:'Glazing ratio',
@@ -2193,18 +1919,15 @@ d:`<p>It drops with thick bars, small cells and jali screens, and rises with pla
 p:`<p><code>ratio = A(L) / A(O)</code>. Areas are Clipper's signed polygon areas, where holes subtract, taken in integer units and divided by 100² to give mm². It is measured against the opening, not the whole wall, and ignores glazing rebates.</p>`,
 live:()=>`${(G.glaze*100).toFixed(1)}% glass, ${(100-G.glaze*100).toFixed(1)}% stone.`},
 
-{id:'compare',t:'The Compare measures',
-s:`<p>Compare puts a Modulor grid and a Mondrian composition on the same opening and measures how each one uses proportion. Modulor uses one ruler with golden-ratio steps. Mondrian balances shapes by eye, with no fixed ratio. The table shows that difference in numbers.</p>`,
-d:`<p>Read the table in rows. <b>Neighbour ratio</b> and <b>Deviation from φ</b> show how close adjacent divisions are to the golden ratio. <b>Additive lengths</b> count lengths that equal the sum of two smaller ones. <b>Cells at φᵏ aspect</b> and <b>simple rational aspect</b> compare golden-ratio shapes with shapes like 2:1 or 3:2. <b>Mirror-symmetric lines</b>, <b>golden sections</b> and <b>Junctions</b> describe layout. The <b>overlay</b> shows where the two systems' lines nearly coincide. <b>Colour</b> reports coverage and how far the coloured mass sits from the centre.</p>`,
-p:`<p>Distinct lengths: division lengths clustered within 3%. Neighbour ratio: max/min of adjacent divisions along each axis, averaged; deviation is mean |r − φ| / φ. Additive: among the distinct lengths in ascending order, excluding the two smallest, the share equal to a sum of two smaller ones within 4%. Aspect: max/min cell side compared with φᵏ (k = 1 to 4) or {1, 5:4, 4:3, 3:2, 2, 5:2, 3, 4}, each within 5%. Modulor cells use nominal series values because the per-axis fit scale would otherwise distort ratios.</p><p>Mirror: interior lines with a partner at L − x within 1.5% of L. Golden: within 2% of 0.382L or 0.618L. Junctions: a crossing needs both lines to pass through the other's interior, a T needs one end on the other, with tolerance 0.3% of the larger dimension. Colour: area-weighted centroid of coloured cells, offset from the window centre as a percentage of the diagonal. Overlay: a Mondrian segment is coincident if within 2% of the dimension of an interior Modulor line on the same axis.</p>`,
-live:()=>{
-  const m=cmpBuild(),a=cmpMetrics(m.mod),b=cmpMetrics(m.mond);
-  return `Right now: Modulor neighbour ratio ${fmtNum(a.meanRatio)} : 1 (${fmtPct(a.phiDev,1)} from φ), Mondrian ${fmtNum(b.meanRatio)} : 1 (${fmtPct(b.phiDev,1)} from φ).`;
-}},
+{id:'export',t:'Exporting: SVG and DXF',
+s:`<p>Exporting saves your window as a drawing or a model that other programs can open. SVG and the 2D DXF are flat drawings. The 3D DXF is a model made of many small flat triangles.</p>`,
+d:`<p>SVG is always in millimetres. DXF files follow the Metric or Imperial setting and are written in millimetres or inches, and the file name ends -mm or -in. Set the units in your CAD import dialog, because the older format used cannot store them.</p><p>The <b>2D DXF</b> has five layers: OPENING, WALL, TRACERY (the stone profile with the glass cut out, useful for CNC or laser cutting), GLASS, and CONSTRUCTION (dashed compass circles, radii and centres). The <b>3D DXF</b> has WALL, TRACERY and GLASS. Glass colours are not exported, and the 3D file always holds the whole model, ignoring the section cut and exploded layers.</p>`,
+p:`<p>Format: AutoCAD R12 ASCII (AC1009) with LTYPE and LAYER tables. Closed outlines are POLYLINE, VERTEX and SEQEND. Construction items are CIRCLE, LINE and POINT, and meshes are 3DFACE with the fourth corner repeating the third. R12 was chosen because nearly every CAD, CAM and BIM tool reads it.</p><p>Outlines are the polygons the app computes, about 4° of arc per segment, so a construction circle is exact and a head is a polyline. Coordinates are written to 4 decimals in millimetres or 6 in inches.</p><p>3D axes: the viewer's (x, y, z) become DXF <code>(x, −z, y)</code>, a pure rotation, so X is across, Y runs into the wall from the front face (Y = 0) and Z is up. Triangles come from the same extrusion and chamfer code as the 3D view.</p>`,
+live:()=>`The 2D file would hold ${G.op.O.length} opening, ${G.surround.length} wall, ${G.tracery.length} tracery and ${G.lights.length} glass outline${G.lights.length===1?'':'s'}, plus ${G.cons.length} construction items. The file name would end -${UNITS==='imperial'?'in':'mm'}.`},
 
 {id:'units',t:'Units and rounding',
 s:`<p>You can show every length in millimetres or in feet and inches. Switching changes only how numbers are written, never the window.</p>`,
-d:`<p>Sliders still move in millimetre steps, about 0.4 inch each, even in imperial mode. SVG export is always in millimetres. Modulor series values are defined in centimetres, so imperial mode shows them in inches.</p>`,
+d:`<p>Sliders still move in millimetre steps, about 0.4 inch each, even in imperial mode. SVG export is always in millimetres. DXF export follows the unit setting and is written in millimetres or inches. Modulor series values are defined in centimetres, so imperial mode shows them in inches.</p>`,
 p:`<p>All geometry is held in millimetres. Imperial display rounds to the nearest 1/16 inch below 24 inches and 1/8 inch above, reduces fractions (5/16″, not 10/32″) and writes exact feet without inches (10′). Modulor terms in imperial are cm ÷ 2.54 to one decimal.</p>`,
 live:()=>`Your span is ${Math.round(S.span)} mm = ${fmtImp(S.span)}.`}
 ];
@@ -2316,7 +2039,6 @@ function helpInit(){
   document.getElementById('helpSearch').addEventListener('input',e=>{helpState.q=e.target.value;helpFilter();});
   document.getElementById('helpClose').addEventListener('click',closeHelp);
   document.getElementById('btnHelp').addEventListener('click',()=>openHelp('start'));
-  document.getElementById('cmHelp').addEventListener('click',()=>openHelp('math','compare'));
   document.getElementById('blockHelp').addEventListener('click',()=>openHelp('start'));
   document.getElementById('side').addEventListener('click',e=>{
     const b=e.target.closest('.info');
@@ -2328,7 +2050,6 @@ function helpInit(){
   document.addEventListener('keydown',e=>{
     if(e.key!=='Escape')return;
     if(!document.getElementById('help').hidden)closeHelp();
-    else if(!document.getElementById('cmp').hidden)cmpClose();
   });
 }
 
@@ -2375,7 +2096,7 @@ function onControl(e){
   else if(p.t==='check')S[k]=e.target.checked;
   else S[k]=e.target.value;
   if(k==='arch'&&ARCH_DEFAULTS[S.arch])Object.assign(S,ARCH_DEFAULTS[S.arch]);
-  if(k==='arch'||k==='pattern'||k==='roseStyle'||k==='latCell'||k==='warp'||k==='subFoils'){syncControls();}
+  if(k==='arch'||k==='pattern'||k==='roseStyle'||k==='latCell'||k==='warp'||k==='subFoils'||k==='secOn'){syncControls();}
   else{
     const vv=document.getElementById('v_'+k);
     if(vv)vv.textContent=fmtVal(p,S[k]);
@@ -2417,6 +2138,130 @@ function loadState(){
   }catch(e){}
 }
 
+
+const SHUF_ARCH=['round','segmental','horseshoe','pointed','tudor','ogee','multifoil','ellipse','parabola','catenary','flat','circle'];
+const SHUF_PAT=['mullions','geometric','rose','grid','mondrian','lattice'];
+const SHUF_SCHEMES=['uniform','golden','fibonacci','modBlue','modRed'];
+let shufHist=[];
+
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+function rr(a,b,step){
+  const v=a+Math.random()*(b-a);
+  return step?Math.round(v/step)*step:v;
+}
+function rseed(){return 1+Math.floor(Math.random()*998);}
+
+function shuffleHead(T){
+  switch(T.arch){
+    case 'pointed':T.rho=rr(0.6,1.9,0.01);break;
+    case 'segmental':T.rise=rr(0.12,0.4,0.01);break;
+    case 'horseshoe':T.stilt=rr(0.15,0.6,0.01);break;
+    case 'tudor':T.rise=rr(0.22,0.4,0.01);T.r1=rr(0.08,0.2,0.005);T.phi=rr(28,55,1);break;
+    case 'ogee':T.rise=rr(0.7,1.0,0.01);T.r1=rr(0.1,0.2,0.005);T.phi=rr(50,72,1);break;
+    case 'multifoil':T.rho=rr(0.5,1.3,0.01);T.lobes=pick([3,5,7,9]);T.bulge=rr(0.55,1.1,0.01);break;
+    case 'ellipse':T.rise=rr(0.25,0.5,0.01);break;
+    case 'parabola':T.rise=rr(0.35,0.8,0.01);break;
+    case 'catenary':T.rise=rr(0.5,1.1,0.01);break;
+    default:break;
+  }
+}
+
+function shufflePattern(T){
+  switch(T.pattern){
+    case 'mullions':
+      T.lights=pick([2,3,3,4,5,6]);T.scheme=pick(SHUF_SCHEMES);T.sym=Math.random()<0.4;
+      break;
+    case 'geometric':
+      T.lights=pick([2,2,3,4]);T.scheme=Math.random()<0.8?'uniform':pick(SHUF_SCHEMES);T.sym=false;
+      T.subRho=rr(0.5,1.8,0.01);T.subSpring=rr(0.55,0.92,0.01);T.subFoils=pick([0,0,3,5]);T.subBulge=rr(0.6,1,0.01);
+      T.circles=pick([0,1,1,2,3,4]);T.minR=rr(30,80,1);T.foilN=pick([0,3,4,5,6,8]);
+      break;
+    case 'rose':
+      T.petals=pick([6,8,10,12,14,16]);T.roseStyle=Math.random()<0.8?'plate':'wheel';
+      T.circles=pick([0,0,6,10,14]);T.foilN=pick([0,3,4,5]);T.minR=rr(25,50,1);
+      break;
+    case 'grid':
+      T.cols=pick([2,3,3,4,5,6]);T.rows=pick([3,4,5,6,7,8,9]);
+      T.scheme=pick(SHUF_SCHEMES);T.rowScheme=pick(SHUF_SCHEMES);T.sym=Math.random()<0.3;
+      T.warp=pick([0,0,40,70,100]);T.warpLen=rr(900,2200,10);T.seed=rseed();T.polychrome=Math.random()<0.5;
+      break;
+    case 'mondrian':
+      T.mondSplits=pick([5,6,7,8,9,10,12]);T.mondSeed=rseed();
+      break;
+    case 'lattice':
+      T.latCell=pick(['square','hexagon','octagon','star']);T.pitch=rr(170,340,5);T.rot=pick([0,0,15,30,45]);
+      T.starPts=pick([6,8,10,12]);T.starDepth=rr(0.4,0.7,0.01);T.dual=Math.random()<0.7;
+      break;
+    default:break;
+  }
+}
+
+function shuffleBars(T){
+  if(T.pattern==='mondrian')T.bar=rr(40,56,1);
+  else if(T.pattern==='lattice')T.bar=rr(24,40,1);
+  else T.bar=rr(28,60,1);
+  T.frame=Math.min(120,Math.round(T.bar*rr(0.8,1.8)));
+}
+
+function shuffleOk(T,g){
+  if(g.warn)return false;
+  if(g.nLights<1||g.nLights>260)return false;
+  if(T.pattern!=='plain'&&(g.glaze<0.15||g.glaze>0.92))return false;
+  return true;
+}
+
+function updateBackBtn(){
+  const b=document.getElementById('btnBack');
+  if(b)b.disabled=shufHist.length===0;
+}
+
+function doShuffle(all){
+  const snap=Object.assign({},S);
+  let found=null;
+  for(let t=0;t<14&&!found;t++){
+    const T=Object.assign({},snap);
+    if(all){
+      T.arch=pick(SHUF_ARCH);
+      Object.assign(T,ARCH_DEFAULTS[T.arch]||{});
+      T.pattern=pick(SHUF_PAT);
+      T.height=Math.min(6000,Math.max(800,Math.round(snap.height*rr(0.9,1.12)/10)*10));
+    }
+    shuffleHead(T);
+    if(T.pattern!=='plain')shufflePattern(T);
+    shuffleBars(T);
+    S=T;
+    try{
+      const g=compute(T);
+      if(shuffleOk(T,g))found=T;
+    }catch(e){}
+  }
+  S=snap;
+  if(!found){
+    toast('No valid variation found — try again');
+    return;
+  }
+  shufHist.push(snap);
+  if(shufHist.length>20)shufHist.shift();
+  S=found;
+  view.fit=true;
+  syncControls();
+  saveState();
+  schedule(true);
+  updateBackBtn();
+  toast(all?'Shuffled — new head and pattern':'Shuffled');
+}
+
+function shuffleBack(){
+  if(!shufHist.length)return;
+  S=shufHist.pop();
+  view.fit=true;
+  syncControls();
+  saveState();
+  schedule(true);
+  updateBackBtn();
+  toast('Back to the previous design');
+}
+
 function applyPreset(i){
   S=Object.assign({},DEFAULT,PRESETS[i].s);
   view.fit=true;
@@ -2440,11 +2285,8 @@ function applyUnits(u){
 function toggleUnits(){
   applyUnits(UNITS==='imperial'?'metric':'imperial');
   try{localStorage.setItem(UNITS_KEY,UNITS);}catch(e){}
-  cmpFillDims();
-  cmpSyncControls();
   syncControls();
   schedule(true);
-  cmpUpdate();
   toast(UNITS==='imperial'?'Imperial — feet and inches':'Metric — millimetres');
 }
 function toggleTheme(){
@@ -2452,6 +2294,126 @@ function toggleTheme(){
   const next=cur==='light'?'dark':'light';
   applyTheme(next);
   try{localStorage.setItem(THEME_KEY,next);}catch(e){}
+}
+
+
+function dxfUnits(){
+  return UNITS==='imperial'?{f:1/25.4,d:6,name:'inches',tag:'in'}:{f:1,d:4,name:'millimetres',tag:'mm'};
+}
+
+function dxfHead(g,u,layers,note){
+  g(999,note);
+  g(0,'SECTION');g(2,'HEADER');g(9,'$ACADVER');g(1,'AC1009');g(0,'ENDSEC');
+  g(0,'SECTION');g(2,'TABLES');
+  g(0,'TABLE');g(2,'LTYPE');g(70,2);
+  g(0,'LTYPE');g(2,'CONTINUOUS');g(70,0);g(3,'Solid line');g(72,65);g(73,0);g(40,0);
+  const dash=(20*u.f).toFixed(u.d),gap=(-10*u.f).toFixed(u.d),tot=(30*u.f).toFixed(u.d);
+  g(0,'LTYPE');g(2,'DASHED');g(70,0);g(3,'Dashed');g(72,65);g(73,2);g(40,tot);g(49,dash);g(49,gap);
+  g(0,'ENDTAB');
+  g(0,'TABLE');g(2,'LAYER');g(70,layers.length);
+  layers.forEach(l=>{g(0,'LAYER');g(2,l[0]);g(70,0);g(62,l[1]);g(6,l[2]||'CONTINUOUS');});
+  g(0,'ENDTAB');
+  g(0,'ENDSEC');
+  g(0,'SECTION');g(2,'ENTITIES');
+}
+
+function dxfTail(g){
+  g(0,'ENDSEC');
+  g(0,'EOF');
+}
+
+function dxfPoly(g,layer,pts){
+  g(0,'POLYLINE');g(8,layer);g(66,1);g(70,1);g(10,0);g(20,0);g(30,0);
+  pts.forEach(p=>{g(0,'VERTEX');g(8,layer);g(10,p[0]);g(20,p[1]);g(30,0);});
+  g(0,'SEQEND');g(8,layer);
+}
+
+function dxf2dText(){
+  const u=dxfUnits();
+  const L=[];
+  const g=(c,v)=>{L.push(c);L.push(v);};
+  const n=v=>(v*u.f).toFixed(u.d);
+  const layers=[['OPENING',5],['WALL',8],['TRACERY',2],['GLASS',4],['CONSTRUCTION',3,'DASHED']];
+  dxfHead(g,u,layers,'TRACERY v'+APP_VERSION+' 2D elevation, units: '+u.name+', X across, Y up');
+  const path=p=>p.map(q=>[n(q.X/SC),n(q.Y/SC)]);
+  G.op.O.forEach(p=>dxfPoly(g,'OPENING',path(p)));
+  G.surround.forEach(p=>dxfPoly(g,'WALL',path(p)));
+  G.tracery.forEach(p=>dxfPoly(g,'TRACERY',path(p)));
+  G.lights.forEach(p=>dxfPoly(g,'GLASS',path(p)));
+  G.cons.forEach(o=>{
+    if(o.k==='c'){g(0,'CIRCLE');g(8,'CONSTRUCTION');g(10,n(o.cx));g(20,n(o.cy));g(30,0);g(40,n(o.r));}
+    else if(o.k==='l'){g(0,'LINE');g(8,'CONSTRUCTION');g(10,n(o.x0));g(20,n(o.y0));g(30,0);g(11,n(o.x1));g(21,n(o.y1));g(31,0);}
+    else{g(0,'POINT');g(8,'CONSTRUCTION');g(10,n(o.x));g(20,n(o.y));g(30,0);}
+  });
+  dxfTail(g);
+  return L.join('\n')+'\n';
+}
+
+function dxfFaces(g,u,layer,geo,zOff,counter){
+  const pos=geo.attributes.position;
+  const idx=geo.index;
+  const count=idx?idx.count:pos.count;
+  const vx=i=>{
+    const k=idx?idx.getX(i):i;
+    const x=pos.getX(k),y=pos.getY(k),z=pos.getZ(k)+zOff;
+    return [(x*u.f).toFixed(u.d),(-z*u.f).toFixed(u.d),(y*u.f).toFixed(u.d)];
+  };
+  for(let i=0;i+2<count;i+=3){
+    const a=vx(i),b=vx(i+1),c=vx(i+2);
+    g(0,'3DFACE');g(8,layer);
+    g(10,a[0]);g(20,a[1]);g(30,a[2]);
+    g(11,b[0]);g(21,b[1]);g(31,b[2]);
+    g(12,c[0]);g(22,c[1]);g(32,c[2]);
+    g(13,c[0]);g(23,c[1]);g(33,c[2]);
+    counter.n++;
+  }
+}
+
+function dxf3dText(){
+  const u=dxfUnits();
+  const L=[];
+  const g=(c,v)=>{L.push(c);L.push(v);};
+  const counter={n:0};
+  const layers=[['WALL',8],['TRACERY',2],['GLASS',4]];
+  dxfHead(g,u,layers,'TRACERY v'+APP_VERSION+' 3D model, units: '+u.name+', X across, Y into the wall from the front face, Z up');
+  const cham=Math.min(S.chamfer,G.hw*0.45);
+  const wallShapes=G.surTree.Childs().length?treeShapes(G.surTree).map(s=>polyShape(s.outer,s.holes)):[];
+  const tracShapes=treeShapes(G.tracTree).map(s=>polyShape(s.outer,s.holes));
+  const wallD=S.wallDepth,tracD=S.tracDepth;
+  if(wallShapes.length)dxfFaces(g,u,'WALL',solidGeo(wallShapes,wallD,S.chamfer),-wallD,counter);
+  if(tracShapes.length)dxfFaces(g,u,'TRACERY',solidGeo(tracShapes,tracD,cham),-S.setback-tracD,counter);
+  const gt=Math.max(8,Math.min(24,tracD*0.12));
+  G.lightShapes.forEach(sh=>{
+    const geo=new THREE.ExtrudeGeometry([polyShape(sh.outer,sh.holes)],{depth:gt,bevelEnabled:false,curveSegments:1,steps:1});
+    dxfFaces(g,u,'GLASS',geo,-S.setback-tracD/2-gt/2,counter);
+    geo.dispose();
+  });
+  dxfTail(g);
+  return {text:L.join('\n')+'\n',faces:counter.n};
+}
+
+function downloadText(name,text,type){
+  const blob=new Blob([text],{type});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+}
+
+function exportDxf(kind){
+  if(!G)return;
+  const u=dxfUnits();
+  const base='tracery-'+S.arch+'-'+S.pattern;
+  if(kind==='dxf2d'){
+    downloadText(base+'-2d-'+u.tag+'.dxf',dxf2dText(),'application/dxf');
+    toast('DXF 2D exported in '+u.name);
+  }else{
+    const r=dxf3dText();
+    downloadText(base+'-3d-'+u.tag+'.dxf',r.text,'application/dxf');
+    toast('DXF 3D exported in '+u.name+' · '+r.faces.toLocaleString('en-US')+' faces');
+  }
 }
 
 function exportSvg(){
@@ -2526,12 +2488,16 @@ function initUi(){
     applyPreset(parseInt(sel.value,10));
     sel.value='';
   });
-  document.getElementById('btnSeed').addEventListener('click',()=>{
-    S.seed=1+Math.floor(Math.random()*998);
-    syncControls();saveState();schedule(true);
-    toast('Seed '+S.seed);
+  document.getElementById('btnShuffle').addEventListener('click',()=>doShuffle(false));
+  document.getElementById('btnShuffleAll').addEventListener('click',()=>doShuffle(true));
+  document.getElementById('btnBack').addEventListener('click',shuffleBack);
+  const ex=document.getElementById('exportSel');
+  ex.addEventListener('change',()=>{
+    const v=ex.value;
+    ex.value='';
+    if(v==='svg')exportSvg();
+    else if(v==='dxf2d'||v==='dxf3d')exportDxf(v);
   });
-  document.getElementById('btnSvg').addEventListener('click',exportSvg);
   document.getElementById('btnReset').addEventListener('click',async()=>{
     const ok=await confirmDialog('Reset every parameter to its default?','Reset');
     if(!ok)return;
@@ -2543,7 +2509,14 @@ function initUi(){
   document.getElementById('btnTheme').addEventListener('click',toggleTheme);
   document.getElementById('btnUnits').addEventListener('click',toggleUnits);
   document.getElementById('btnFit').addEventListener('click',()=>{view.fit=true;dirty2d=true;});
-  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.getAttribute('data-view'))));
+  document.getElementById('btnView3d').addEventListener('click',resetView3d);
+  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{
+    const name=b.getAttribute('data-view');
+    const want=name==='side';
+    if(S.secOn!==want){S.secOn=want;syncControls();saveState();}
+    schedule(false);
+    setView(name);
+  }));
   ['lyStone','lyGlass','lyCons','lyDims'].forEach(k=>{
     document.getElementById('ly_'+k).addEventListener('change',e=>{S[k]=e.target.checked;saveState();dirty2d=true;});
   });
@@ -2563,7 +2536,6 @@ function start(){
   initUi();
   syncControls();
   setupPointer();
-  cmpInit();
   helpInit();
   init3D();
   checkBlock();
