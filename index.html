@@ -85,6 +85,14 @@ select{background:var(--btnbg);border:1px solid var(--line);padding:6px 8px;colo
 .row[hidden]{display:none}
 .row label{color:var(--mute);font-size:11px}
 .row .val{font-family:'Space Mono',monospace;font-size:11px;color:var(--ink);text-align:right}
+.row input.val{background:transparent;border:1px solid transparent;padding:1px 4px;width:8.5em;justify-self:end}
+.row input.val:hover{border-color:var(--line)}
+.row input.val:focus{outline:none;border-color:var(--accent);background:var(--btnbg)}
+.row input.val.bad,.row input.lst.bad{border-color:var(--warn)}
+.row input.lst{grid-column:1/3;width:100%;font-family:'Space Mono',monospace;font-size:11px;background:var(--btnbg);border:1px solid var(--line);padding:5px 7px;color:var(--ink)}
+.row input.lst:focus{outline:none;border-color:var(--accent)}
+.modal input,.modal select{width:100%;margin:0 0 14px;padding:8px;background:var(--btnbg);border:1px solid var(--line);color:var(--ink);font-size:16px}
+@media (hover:none){.row input.val,.row input.lst{font-size:16px}}
 .row input[type=range]{grid-column:1/3;width:100%;accent-color:var(--accent);height:18px;margin:0}
 .row select{grid-column:1/3;width:100%}
 .row.chk{grid-template-columns:1fr}
@@ -224,13 +232,14 @@ footer a:hover{color:var(--accent)}
   <button class="pri" id="blockHelp">Read the guide</button>
 </div>
 <div class="toast" id="toast"></div>
-<div class="modal" id="modal" hidden><div class="box"><p id="modalMsg"></p><div class="acts"><button id="modalNo">Cancel</button><button class="pri" id="modalYes">OK</button></div></div></div>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+<div class="modal" id="modal" hidden><div class="box"><p id="modalMsg"></p><input type="text" id="modalInput" maxlength="60" autocomplete="off" hidden><select id="modalSelect" hidden></select><div class="acts"><button id="modalNo">Cancel</button><button class="pri" id="modalYes">OK</button></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-const APP_VERSION='1.8.0';
+const APP_VERSION='1.10.0';
 const SC=100;
 const TAU=Math.PI*2;
 const PHI=(1+Math.sqrt(5))/2;
@@ -245,13 +254,16 @@ const THEME_KEY='tracery.theme';
 const UNITS_KEY='tracery.units';
 const SIDE_KEY='tracery.side';
 const SEC_KEY='tracery.secopen';
+const UPRE_KEY='tracery.userpresets';
+const VIEW_KEYS=['secOn','secX','explode','wire'];
 let UNITS='metric';
+let userPresets=[];
 const secOpen={open:true,trac:false,bars:false,three:false};
 const CL=window.ClipperLib;
 
 const OPTS_ARCH=[['round','Semicircular (Romanesque)'],['segmental','Segmental'],['horseshoe','Horseshoe (Moorish)'],['pointed','Pointed — drop · equilateral · lancet'],['tudor','Four-centred (Tudor)'],['ogee','Ogee'],['multifoil','Multifoil / cusped'],['ellipse','Semi-elliptical'],['parabola','Parabolic'],['catenary','Catenary (Gaudí)'],['flat','Flat lintel'],['circle','Circular — oculus · rose']];
 const OPTS_PATTERN=[['plain','Plain light'],['mullions','Mullioned lights'],['geometric','Geometric — sub-lights + circles'],['rose','Rose / radial'],['grid','Grid — Modulor · organic'],['mondrian','Mondrian — asymmetric composition'],['lattice','Lattice — jali · tilings']];
-const OPTS_SCHEME=[['uniform','Uniform'],['golden','Golden ratio'],['fibonacci','Fibonacci'],['modBlue','Modulor Blue series'],['modRed','Modulor Red series']];
+const OPTS_SCHEME=[['uniform','Uniform'],['golden','Golden ratio'],['fibonacci','Fibonacci'],['modBlue','Modulor Blue series'],['modRed','Modulor Red series'],['custom','Custom widths']];
 const OPTS_ROSE=[['plate','Plate — circles'],['wheel','Wheel — spokes']];
 const OPTS_LAT=[['square','Square'],['hexagon','Hexagon'],['octagon','Octagon + square (4.8.8)'],['star','Star + diamond']];
 
@@ -289,7 +301,8 @@ const DEFAULT={
   mondSplits:8,mondSeed:4,polychrome:false,
   bar:42,frame:60,margin:350,
   wallDepth:450,tracDepth:200,setback:120,chamfer:8,glassOp:0.55,stained:true,explode:0,edges:true,wire:false,secOn:false,secX:0,sunAz:35,sunEl:45,
-  lyStone:true,lyGlass:true,lyCons:true,lyDims:true
+  lyStone:true,lyGlass:true,lyCons:true,lyDims:true,
+  customCols:[300,400,300],customRows:[600,900,600]
 };
 
 const PRESETS=[
@@ -310,6 +323,13 @@ const PRESETS=[
   {n:'Modernist Modulor grid',s:{arch:'flat',span:1130,height:2260,pattern:'grid',cols:4,rows:5,scheme:'modBlue',rowScheme:'modBlue',sym:false,warp:0,polychrome:true,bar:30,frame:30}}
 ];
 
+const HARD={span:[100,20000],height:[200,40000],rise:[0.02,2],rho:[0.5,4],stilt:[0.02,1.5],r1:[0.02,0.5],phi:[5,89],lobes:[3,21],bulge:[0.1,2],
+  lights:[1,12],subRho:[0.5,4],subSpring:[0.05,1],subFoils:[0,12],subBulge:[0.1,2],circles:[0,40],minR:[5,2000],foilN:[0,16],petals:[3,36],
+  cols:[1,20],rows:[1,30],warp:[0,600],warpLen:[100,20000],seed:[1,99999],pitch:[40,3000],rot:[0,360],starPts:[3,48],starDepth:[0.1,0.95],
+  mondSplits:[1,30],mondSeed:[1,99999],bar:[2,600],frame:[0,1000],margin:[0,6000],wallDepth:[10,10000],tracDepth:[5,5000],setback:[0,5000],
+  chamfer:[0,300],glassOp:[0.05,1],explode:[0,20000],sunAz:[-180,180],sunEl:[1,89],secX:[-20000,20000]};
+const INTS=new Set(['lobes','lights','subFoils','circles','foilN','petals','cols','rows','seed','starPts','mondSplits','mondSeed']);
+
 const SECTIONS=[
   {id:'open',title:'Opening',p:[
     {k:'arch',l:'Head',t:'select',o:OPTS_ARCH,g:1},
@@ -325,8 +345,9 @@ const SECTIONS=[
   ]},
   {id:'trac',title:'Tracery',p:[
     {k:'pattern',l:'Pattern',t:'select',o:OPTS_PATTERN,g:1},
-    {k:'lights',l:'Lights',t:'range',min:1,max:6,step:1,g:1,show:s=>['mullions','geometric'].includes(s.pattern)},
+    {k:'lights',l:'Lights',t:'range',min:1,max:6,step:1,g:1,show:s=>['mullions','geometric'].includes(s.pattern)&&s.scheme!=='custom'},
     {k:'scheme',l:'Division scheme',t:'select',o:OPTS_SCHEME,g:1,show:s=>['mullions','geometric','grid'].includes(s.pattern)},
+    {k:'customCols',l:'Custom widths',t:'list',maxN:20,g:1,show:s=>['mullions','geometric','grid'].includes(s.pattern)&&s.scheme==='custom'},
     {k:'sym',l:'Mirror divisions',t:'check',g:1,show:s=>['mullions','geometric','grid'].includes(s.pattern)},
     {k:'subRho',l:'Sub-light radius ÷ span',t:'range',min:0.5,max:2.4,step:0.01,g:1,show:s=>s.pattern==='geometric'},
     {k:'subSpring',l:'Sub-light springing',t:'range',min:0.2,max:1,step:0.01,g:1,show:s=>s.pattern==='geometric'},
@@ -337,9 +358,10 @@ const SECTIONS=[
     {k:'foilN',l:'Foil lobes (0 = plain)',t:'range',min:0,max:8,step:1,g:1,show:s=>s.pattern==='geometric'||(s.pattern==='rose'&&s.roseStyle==='plate')},
     {k:'roseStyle',l:'Rose style',t:'select',o:OPTS_ROSE,g:1,show:s=>s.pattern==='rose'},
     {k:'petals',l:'Petals / spokes',t:'range',min:4,max:24,step:1,g:1,show:s=>s.pattern==='rose'},
-    {k:'cols',l:'Columns',t:'range',min:1,max:10,step:1,g:1,show:s=>s.pattern==='grid'},
-    {k:'rows',l:'Rows',t:'range',min:1,max:14,step:1,g:1,show:s=>s.pattern==='grid'},
+    {k:'cols',l:'Columns',t:'range',min:1,max:10,step:1,g:1,show:s=>s.pattern==='grid'&&s.scheme!=='custom'},
+    {k:'rows',l:'Rows',t:'range',min:1,max:14,step:1,g:1,show:s=>s.pattern==='grid'&&s.rowScheme!=='custom'},
     {k:'rowScheme',l:'Row scheme',t:'select',o:OPTS_SCHEME,g:1,show:s=>s.pattern==='grid'},
+    {k:'customRows',l:'Custom row heights',t:'list',maxN:30,g:1,show:s=>s.pattern==='grid'&&s.rowScheme==='custom'},
     {k:'warp',l:'Organic warp',t:'range',min:0,max:160,step:1,u:'mm',g:1,show:s=>s.pattern==='grid'},
     {k:'warpLen',l:'Warp wavelength',t:'range',min:300,max:3000,step:10,u:'mm',g:1,show:s=>s.pattern==='grid'&&s.warp>0},
     {k:'seed',l:'Seed',t:'range',min:1,max:999,step:1,g:1,show:s=>s.pattern==='grid'&&s.warp>0},
@@ -749,9 +771,10 @@ function modTerms(n,series,L,mirror){
   best.scale=L/best.sum;
   return best;
 }
-function division(n,sch,sym,L){
+function division(n,sch,sym,L,custom){
   let w;
-  if(isMod(sch))w=modTerms(n,sch==='modRed'?'red':'blue',L||1000,sym).terms;
+  if(sch==='custom'&&Array.isArray(custom)&&custom.length)w=custom.slice();
+  else if(isMod(sch))w=modTerms(n,sch==='modRed'?'red':'blue',L||1000,sym).terms;
   else if(sym&&n>1){
     const half=Math.ceil(n/2);
     const w0=weights(half,sch);
@@ -878,7 +901,7 @@ function rectPath(x0,y0,x1,y1){
 }
 
 function cellsMullions(S,op){
-  const b=division(Math.round(S.lights),S.scheme,S.sym,op.h*2);
+  const b=division(Math.round(S.lights),S.scheme,S.sym,op.h*2,S.customCols);
   const cells=[];
   const cons=[];
   for(let i=0;i<b.length-1;i++){
@@ -886,7 +909,7 @@ function cellsMullions(S,op){
     cells.push(boolOp(op.O,[rectPath(xa,-100,xb,op.Ht+100)],CL.ClipType.ctIntersection));
     if(i>0)cons.push(cLn(xa,0,xa,op.Ht));
   }
-  return {cells,cons,notes:[]};
+  return {cells,cons,notes:S.scheme==='custom'?[customNote('Custom widths',S.customCols,op.h*2)]:[]};
 }
 
 function subHead(hs,S){
@@ -895,8 +918,8 @@ function subHead(hs,S){
 }
 
 function cellsGeometric(S,op,hw,fi){
-  const n=Math.round(S.lights);
-  const b=division(n,S.scheme,S.sym,op.h*2);
+  const b=division(Math.round(S.lights),S.scheme,S.sym,op.h*2,S.customCols);
+  const n=b.length-1;
   const cells=[];
   let cons=[];
   const ysub=op.ys*S.subSpring;
@@ -909,7 +932,7 @@ function cellsGeometric(S,op,hw,fi){
     cons=cons.concat(shiftCons(head.cons,cx,ysub));
     cons.push(cLn(cx-hs,ysub,cx+hs,ysub));
   }
-  const notes=[];
+  const notes=S.scheme==='custom'?[customNote('Custom widths',S.customCols,op.h*2)]:[];
   if(S.circles>0){
     const free=boolOp(offsetPaths(op.O,-fi),[].concat.apply([],cells),CL.ClipType.ctDifference);
     const cs=pack(free,Math.round(S.circles),S.minR);
@@ -977,8 +1000,8 @@ function cellsRose(S,op,hw,fi){
 }
 
 function cellsGrid(S,op){
-  const cols=Math.round(S.cols),rows=Math.round(S.rows);
-  const bx=division(cols,S.scheme,S.sym,op.h*2),by=division(rows,S.rowScheme,S.sym,op.Ht);
+  const bx=division(Math.round(S.cols),S.scheme,S.sym,op.h*2,S.customCols),by=division(Math.round(S.rows),S.rowScheme,S.sym,op.Ht,S.customRows);
+  const cols=bx.length-1,rows=by.length-1;
   const rng=mulberry32(Math.round(S.seed)*7919);
   const p1=rng()*TAU,p2=rng()*TAU,p3=rng()*TAU,p4=rng()*TAU;
   const crng=mulberry32(Math.round(S.seed)*613+29);
@@ -1004,6 +1027,8 @@ function cellsGrid(S,op){
     if(cell.length){cells.push(cell);colors.push(CORB_PAL[pool[Math.floor(crng()*pool.length)]]);}
   }
   const notes=[['Grid',cols+' × '+rows]];
+  if(S.scheme==='custom')notes.push(customNote('Custom widths',S.customCols,op.h*2));
+  if(S.rowScheme==='custom')notes.push(customNote('Custom heights',S.customRows,op.Ht));
   if(isMod(S.scheme)){
     const t=modTerms(cols,S.scheme==='modRed'?'red':'blue',op.h*2,S.sym);
     notes.push(['Columns',fmtTerms(t.terms,t.scale)]);
@@ -1659,7 +1684,7 @@ const HELP_START=`
 const HELP_CONTROLS=[
 ['Top bar',[
 ['Controls','Shows or hides the controls panel so the two views get the full width. Collapse all and Expand all at the top of the panel fold the control groups. Both choices are remembered. Only Opening is open the first time.'],
-['Presets','Loads a complete window. Each one replaces all current settings.'],
+['Presets','Loads a complete window. Each one replaces all current settings. Your own saved designs appear under My presets. Manage at the bottom of the menu saves the current design under a name, deletes a saved design, and exports or imports your saved designs as a file so you can move them between browsers or share them. A saved design holds every setting except the section cut, exploded layers and wireframe.'],
 ['Help','Opens this guide.'],
 ['Shuffle','Makes a new variation of the current head and pattern: proportions, number of lights, bar width and seeds change within sensible ranges. The size, units and 3D settings stay. Variations that cannot be drawn, or that leave almost no glass or almost no stone, are discarded and another is tried. Press it repeatedly to see many quick samples.'],
 ['Shuffle all','As Shuffle, but also picks a new head and a new pattern and varies the height by up to about 10%.'],
@@ -1686,6 +1711,7 @@ const HELP_CONTROLS=[
 ['Packed circles, Smallest circle radius, Foil lobes','Fill the gap above the sub-lights with circles, stop when they get too small, and turn each into a trefoil, quatrefoil and so on.'],
 ['Rose style, Petals','Plate circles or radial spokes, and how many around the ring.'],
 ['Columns, Rows, Row scheme','Grid divisions across and up the opening.'],
+['Custom widths, Custom row heights','Appear when a division scheme is set to Custom widths. Type your own sizes separated by commas, for example 300, 450, 300 or 1\' 0", 1\' 6". The number of entries sets the number of lights, columns or rows. If they do not add up to the opening they are all scaled by the same factor, shown in the analysis strip.'],
 ['Organic warp, Warp wavelength, Seed','Bend the grid lines into flowing Art Nouveau curves. The same seed always gives the same curves.'],
 ['Corbusier polychromy','Colours grid cells ivory, brick red, Prussian blue and ochre.'],
 ['Splits and Composition seed','How many cuts the Mondrian generator makes and which composition results.'],
@@ -1703,6 +1729,10 @@ const HELP_CONTROLS=[
 ['Edge lines and Wireframe','Draw the outlines of the stone, or show the mesh.'],
 ['Section cut and Cut position','Slices the model on a vertical plane and removes everything on one side. Cut position moves the plane left or right of the centreline. The Section button turns the cut on and views it from the side. Front and Oblique turn it off.'],
 ['Sun azimuth and elevation','Direction of the light that casts shadows from the tracery onto the glass.']]],
+['Typing values',[
+['Click a number to type','Every number beside a slider can be typed. Press Enter or click away to apply, Escape to cancel. You can go beyond the slider\'s range, within safe limits, and the slider stretches to include your value.'],
+['Lengths','Metric: 1130, 1130 mm, 113 cm, 1.13 m. Imperial: 3\' 8 1/2", 3\'-8 1/2", 3 ft 8.5 in, 44.5 in, 6\'. Either system works whatever the display is set to. A bare number means millimetres in Metric and inches in Imperial.'],
+['Other values','Ratios and angles take plain numbers (0.3, 45 or 45°) and fractions such as 1/3. Counts and seeds are rounded to whole numbers. Foil and cusp counts accept none.']]],
 ['Views',[
 ['2D layers','Toggle stone, glass, construction geometry and dimension lines. Drag to pan, scroll or pinch to zoom, double-click or press Fit to reset.'],
 ['3D view','Drag to orbit, scroll to zoom. Front and Oblique snap to standard views. Section cuts the model along a vertical plane and shows the profile through the wall, tracery and glass in solid colour. Reset view returns to the oblique view with the section cut off, wireframe off and the layers together.'],]]
@@ -1724,6 +1754,7 @@ const HELP_NUMBERS=[
 ['Petal radius','For rose windows, petal radius as a fraction of the rose radius, from the formula in the rose topic.'],
 ['Hub radius','For wheel windows, the central hub as a fraction of the rose radius.'],
 ['Grid, Columns, Rows','Grid size. With a Modulor scheme, the series terms used (in cm, or inches in imperial) and the scale factor needed to fit your opening.'],
+['Custom widths, Custom heights','The sizes you entered, and the scale applied if they did not add up to the opening.'],
 ['Lattice pitch, Cells','Tile size actually used and the number of tiles before clipping. The pitch grows if the tiling would be too dense.'],
 ['Composition','Number of fields in a Mondrian composition and its seed.'],
 ['Notice','Appears when something could not be drawn as asked, for example parameters with no valid arch, or bars wider than the cells.']
@@ -1838,14 +1869,14 @@ live:()=>`Bar ${fmtLen(S.bar)}: each cell shrinks ${fmtLen(S.bar/2)} per side. E
 
 {id:'divisions',t:'Dividing a width: uniform, golden, Fibonacci',
 s:`<p>To split an opening into three lights you can make them equal, or make each one bigger than the last by the golden ratio, or follow Fibonacci numbers: 1, 1, 2, 3, 5 and so on.</p>`,
-d:`<p>Each scheme gives relative weights that grow from left to right (or bottom to top for rows). <b>Mirror divisions</b> reflects them so the biggest light is in the middle, which gives a symmetric window. Schemes apply to mullion spacing, geometric sub-lights and grid columns. <b>Row scheme</b> sets grid rows.</p>`,
-p:`<p>Weights wᵢ = φⁱ or Fᵢ (1, 1, 2, 3, 5…), normalised so boundaries are <code>bᵢ = Σ₍ₖ&lt;ᵢ₎ wₖ / Σ wₖ</code>. Golden gives successive lengths in the exact ratio φ = (1 + √5)/2 ≈ 1.618. Fibonacci ratios converge to φ. Mirror mode builds weights for ⌈n/2⌉ divisions and reflects them, sharing the centre when n is odd.</p>`,
+d:`<p>Each scheme gives relative weights that grow from left to right (or bottom to top for rows). <b>Mirror divisions</b> reflects them so the biggest light is in the middle, which gives a symmetric window. Schemes apply to mullion spacing, geometric sub-lights and grid columns. <b>Row scheme</b> sets grid rows.</p><p>Choose <b>Custom widths</b> to type your own list, such as 300, 450, 300. The number of entries sets the number of lights or columns. If the list does not add up to the opening, every entry is scaled by the same factor to fit, and the factor is shown in the analysis strip.</p>`,
+p:`<p>Weights wᵢ = φⁱ or Fᵢ (1, 1, 2, 3, 5…), normalised so boundaries are <code>bᵢ = Σ₍ₖ&lt;ᵢ₎ wₖ / Σ wₖ</code>. Golden gives successive lengths in the exact ratio φ = (1 + √5)/2 ≈ 1.618. Fibonacci ratios converge to φ. Mirror mode builds weights for ⌈n/2⌉ divisions and reflects them, sharing the centre when n is odd.</p><p>Custom: the entered lengths wᵢ (mm) are used as the weights directly, so bᵢ = Σ₍ₖ<ᵢ₎ wₖ / Σ wₖ and the scale shown is L / Σ wₖ. The list is stored in millimetres whatever units it was typed in, and mirror mode is ignored for a custom list.</p>`,
 live:()=>{
   if(!['mullions','geometric','grid'].includes(S.pattern))return 'Choose the Mullioned, Geometric or Grid pattern to see your numbers here.';
   const n=Math.round(S.pattern==='grid'?S.cols:S.lights);
-  const b=division(n,S.scheme,S.sym,S.span);
+  const b=division(n,S.scheme,S.sym,S.span,S.customCols);
   const lens=diffs(b).map(x=>fmtLen(x*S.span));
-  return `${n} division${n===1?'':'s'} across ${fmtLen(S.span)}: ${lens.join(' · ')}.`;
+  return `${lens.length} division${lens.length===1?'':'s'} across ${fmtLen(S.span)}: ${lens.join(' · ')}.`;
 }},
 
 {id:'modulor',t:'Modulor Red and Blue series',
@@ -1937,7 +1968,7 @@ live:()=>`The 2D file would hold ${G.op.O.length} opening, ${G.surround.length} 
 
 {id:'units',t:'Units and rounding',
 s:`<p>You can show every length in millimetres or in feet and inches. Switching changes only how numbers are written, never the window.</p>`,
-d:`<p>Sliders still move in millimetre steps, about 0.4 inch each, even in imperial mode. SVG export is always in millimetres. DXF export follows the unit setting and is written in millimetres or inches. Modulor series values are defined in centimetres, so imperial mode shows them in inches.</p>`,
+d:`<p>Sliders still move in millimetre steps, about 0.4 inch each, even in imperial mode. You can type a length in either system at any time (see Typing values in the Controls tab). SVG export is always in millimetres. DXF export follows the unit setting and is written in millimetres or inches. Modulor series values are defined in centimetres, so imperial mode shows them in inches.</p>`,
 p:`<p>All geometry is held in millimetres. Imperial display rounds to the nearest 1/16 inch below 24 inches and 1/8 inch above, reduces fractions (5/16″, not 10/32″) and writes exact feet without inches (10′). Modulor terms in imperial are cm ÷ 2.54 to one decimal.</p>`,
 live:()=>`Your span is ${Math.round(S.span)} mm = ${fmtImp(S.span)}.`}
 ];
@@ -2063,11 +2094,182 @@ function helpInit(){
   });
 }
 
+function parseFrac(t){
+  let m=t.match(/^(\d+(?:\.\d+)?|\.\d+)(?:[\s-]+(\d+)\/(\d+))?$/);
+  if(m){
+    let v=parseFloat(m[1]);
+    if(m[2]){
+      if(+m[3]===0)return NaN;
+      v+=(+m[2])/(+m[3]);
+    }
+    return v;
+  }
+  m=t.match(/^(\d+)\/(\d+)$/);
+  if(m){
+    if(+m[2]===0)return NaN;
+    return (+m[1])/(+m[2]);
+  }
+  return NaN;
+}
+
+function cleanNumberText(str){
+  let s=String(str===null||str===undefined?'':str).trim().toLowerCase();
+  s=s.replace(/[′’‘]/g,"'").replace(/[″”“]/g,'"').replace(/''/g,'"').replace(/\s+/g,' ');
+  s=s.replace(/(\d),(?=\d{3}(?!\d))/g,'$1').replace(/(\d),(\d)/g,'$1.$2');
+  return s;
+}
+
+function parseLength(str,bareFactor){
+  let s=cleanNumberText(str);
+  if(!s)return NaN;
+  let sign=1;
+  if(s[0]==='-'){sign=-1;s=s.slice(1).trim();}
+  else if(s[0]==='+')s=s.slice(1).trim();
+  let m=s.match(/^(\d+(?:\.\d+)?|\.\d+)\s*(mm|cm|m)$/);
+  if(m)return sign*parseFloat(m[1])*({mm:1,cm:10,m:1000})[m[2]];
+  const MIX='\\d+(?:\\.\\d+)?(?:[\\s-]+\\d+/\\d+)?|\\d+/\\d+|\\.\\d+';
+  m=s.match(new RegExp('^(\\d+(?:\\.\\d+)?)\\s*(?:\'|ft|feet|foot)\\s*(?:-\\s*)?(?:('+MIX+')\\s*(?:"|in|inch|inches)?)?$'));
+  if(m){
+    const ft=parseFloat(m[1]);
+    const inch=m[2]?parseFrac(m[2]):0;
+    if(isNaN(inch))return NaN;
+    return sign*(ft*304.8+inch*25.4);
+  }
+  m=s.match(new RegExp('^('+MIX+')\\s*(?:"|in|inch|inches)$'));
+  if(m){
+    const inch=parseFrac(m[1]);
+    return isNaN(inch)?NaN:sign*inch*25.4;
+  }
+  const bare=parseFrac(s);
+  return isNaN(bare)?NaN:sign*bare*bareFactor;
+}
+
+function parseNum(str){
+  let s=cleanNumberText(str).replace(/°|degrees|degree|deg/g,'').trim();
+  if(!s)return NaN;
+  if(s==='none'||s==='plain'||s==='off')return 0;
+  let sign=1;
+  if(s[0]==='-'){sign=-1;s=s.slice(1).trim();}
+  else if(s[0]==='+')s=s.slice(1).trim();
+  const v=parseFrac(s);
+  return isNaN(v)?NaN:sign*v;
+}
+
+function parseList(str,bareFactor,maxN){
+  const s=String(str===null||str===undefined?'':str).trim();
+  if(!s)return null;
+  let parts=s.split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);
+  if(parts.length===1&&/^[\d.\s]+$/.test(parts[0])&&/\s/.test(parts[0]))parts=parts[0].split(/\s+/);
+  if(!parts.length||parts.length>(maxN||20))return null;
+  const out=parts.map(x=>parseLength(x,bareFactor));
+  if(out.some(v=>!isFinite(v)||v<=0||v>100000))return null;
+  return out;
+}
+
+function fmtList(arr){
+  if(UNITS==='imperial')return arr.map(fmtImp).join(', ');
+  return arr.map(v=>String(Math.round(v*100)/100)).join(', ');
+}
+
+function customNote(label,list,L){
+  const sum=list.reduce((a,b)=>a+b,0);
+  const scale=L/sum;
+  return [label,fmtList(list)+(Math.abs(scale-1)>0.0005?' × '+scale.toFixed(3):'')];
+}
+
+function fmtLenEdit(mm){
+  if(UNITS==='imperial')return fmtImp(mm);
+  const r=Math.round(mm*100)/100;
+  if(Number.isInteger(r))return Math.round(r).toLocaleString('en-US')+' mm';
+  return r.toLocaleString('en-US',{maximumFractionDigits:2})+' mm';
+}
+
+function setValText(k){
+  const p=findParam(k);
+  if(p&&p.t==='list'){
+    const le=document.getElementById('c_'+k);
+    if(!le||document.activeElement===le)return;
+    le.value=fmtList(S[k]);
+    le.setAttribute('data-shown',le.value);
+    return;
+  }
+  const vv=document.getElementById('v_'+k);
+  if(!p||!vv)return;
+  if(document.activeElement===vv)return;
+  vv.value=fmtVal(p,S[k]);
+  vv.setAttribute('data-shown',vv.value);
+}
+
+function fitSlider(p){
+  const el=document.getElementById('c_'+p.k);
+  if(!el||p.t!=='range')return;
+  const v=S[p.k];
+  el.min=Math.min(p.min,v);
+  el.max=Math.max(p.max,v);
+  el.value=v;
+}
+
+function editList(k,text){
+  const p=findParam(k);
+  const input=document.getElementById('c_'+k);
+  if(!p||p.t!=='list'||!input)return false;
+  const arr=parseList(text,UNITS==='imperial'?25.4:1,p.maxN);
+  if(!arr){
+    input.value=fmtList(S[k]);
+    input.setAttribute('data-shown',input.value);
+    input.classList.add('bad');
+    setTimeout(()=>input.classList.remove('bad'),800);
+    toast('Could not read "'+text+'" as a list. Separate sizes with commas, for example 300, 450, 300 or 1\' 0", 1\' 6"');
+    return false;
+  }
+  S[k]=arr;
+  afterEdit(k,p);
+  return true;
+}
+
+function afterEdit(k,p){
+  if(k==='arch'||k==='pattern'||k==='roseStyle'||k==='latCell'||k==='warp'||k==='subFoils'||k==='secOn'||k==='scheme'||k==='rowScheme'){syncControls();}
+  else setValText(k);
+  if(k==='arch'||k==='span'||k==='height')view.fit=true;
+  saveState();
+  schedule(!!p.g);
+}
+
+function editValue(k,text){
+  const p=findParam(k);
+  const input=document.getElementById('v_'+k);
+  if(!p||p.t!=='range'||!input)return false;
+  const isLen=p.u==='mm';
+  const v0=isLen?parseLength(text,UNITS==='imperial'?25.4:1):parseNum(text);
+  if(!isFinite(v0)){
+    input.value=fmtVal(p,S[k]);
+    input.setAttribute('data-shown',input.value);
+    input.classList.add('bad');
+    setTimeout(()=>input.classList.remove('bad'),800);
+    toast(isLen?'Could not read "'+text+'". Try 1130, 113 cm, 3\' 8 1/2" or 44.5 in':'Could not read "'+text+'" as a number');
+    return false;
+  }
+  const hr=HARD[k]||[p.min,p.max];
+  let v=v0,limited=false;
+  if(v<hr[0]){v=hr[0];limited=true;}
+  else if(v>hr[1]){v=hr[1];limited=true;}
+  v=INTS.has(k)?Math.round(v):Math.round(v*10000)/10000;
+  S[k]=v;
+  fitSlider(p);
+  if(limited)toast('Limited to '+fmtVal(p,v));
+  afterEdit(k,p);
+  return true;
+}
+
 function fmtVal(p,v){
   if(p.k==='foilN'||p.k==='subFoils')return v<3?'none':String(v);
-  if(p.u==='mm')return fmtLen(v);
-  const dec=p.step<0.1?2:p.step<1?1:0;
-  return Number(v).toFixed(dec)+(p.u?' '+p.u:'');
+  if(p.u==='mm')return fmtLenEdit(v);
+  let dec=p.step<0.1?2:p.step<1?1:0;
+  const scale=Math.pow(10,dec);
+  if(Math.abs(v*scale-Math.round(v*scale))>1e-6)dec=3;
+  let t=Number(v).toFixed(dec);
+  if(dec===3)t=t.replace(/0+$/,'').replace(/\.$/,'');
+  return t+(p.u==='°'?'°':p.u?' '+p.u:'');
 }
 
 function buildControls(){
@@ -2077,7 +2279,9 @@ function buildControls(){
     html+=`<details class="sec" data-sec="${escapeAttr(sec.id)}"${secOpen[sec.id]?' open':''}><summary><span>${escapeHtml(sec.title)}</span><button class="info" data-help="${escapeAttr(sec.id)}" title="How this works">?</button></summary><div class="rows">`;
     sec.p.forEach(p=>{
       if(p.t==='range'){
-        html+=`<div class="row" data-k="${escapeAttr(p.k)}"><label for="c_${escapeAttr(p.k)}">${escapeHtml(p.l)}</label><span class="val" id="v_${escapeAttr(p.k)}"></span><input id="c_${escapeAttr(p.k)}" type="range" min="${p.min}" max="${p.max}" step="${p.step}"></div>`;
+        html+=`<div class="row" data-k="${escapeAttr(p.k)}"><label for="c_${escapeAttr(p.k)}">${escapeHtml(p.l)}</label><input class="val" id="v_${escapeAttr(p.k)}" type="text" inputmode="${p.u==='mm'?'text':'decimal'}" autocomplete="off" spellcheck="false" aria-label="${escapeAttr(p.l)} value" title="${p.u==='mm'?'Click to type a length: 1130, 113 cm, 3&#39; 8 1/2&quot; or 44.5 in':'Click to type a value'}"><input id="c_${escapeAttr(p.k)}" type="range" min="${p.min}" max="${p.max}" step="${p.step}"></div>`;
+      }else if(p.t==='list'){
+        html+=`<div class="row" data-k="${escapeAttr(p.k)}"><label for="c_${escapeAttr(p.k)}">${escapeHtml(p.l)}</label><input class="lst" id="c_${escapeAttr(p.k)}" type="text" inputmode="text" autocomplete="off" spellcheck="false" aria-label="${escapeAttr(p.l)}" title="Separate sizes with commas, for example 300, 450, 300 or 1&#39; 0&quot;, 1&#39; 6&quot;. Bare numbers are millimetres in Metric and inches in Imperial."></div>`;
       }else if(p.t==='select'){
         html+=`<div class="row" data-k="${escapeAttr(p.k)}"><label for="c_${escapeAttr(p.k)}">${escapeHtml(p.l)}</label><select id="c_${escapeAttr(p.k)}">${p.o.map(o=>`<option value="${escapeAttr(o[0])}">${escapeHtml(o[1])}</option>`).join('')}</select></div>`;
       }else{
@@ -2089,6 +2293,27 @@ function buildControls(){
   side.innerHTML=html;
   side.addEventListener('input',onControl);
   side.addEventListener('change',onControl);
+  side.addEventListener('focusin',e=>{
+    const t=e.target;
+    if(t.matches&&t.matches('input.val,input.lst'))t.select();
+  });
+  side.addEventListener('keydown',e=>{
+    const t=e.target;
+    if(!(t.matches&&t.matches('input.val,input.lst')))return;
+    if(e.key==='Enter'){e.preventDefault();t.blur();}
+    else if(e.key==='Escape'){
+      e.preventDefault();
+      t.value=t.getAttribute('data-shown')||t.value;
+      t.blur();
+    }
+  });
+  side.addEventListener('focusout',e=>{
+    const t=e.target;
+    if(!(t.matches&&t.matches('input.val,input.lst')))return;
+    if(t.value===t.getAttribute('data-shown'))return;
+    if(t.matches('input.lst'))editList(t.id.slice(2),t.value);
+    else editValue(t.id.slice(2),t.value);
+  });
   side.addEventListener('toggle',e=>{
     const d=e.target;
     if(d&&d.matches&&d.matches('details.sec')){
@@ -2114,19 +2339,12 @@ function onControl(e){
   if(id.indexOf('c_')!==0)return;
   const k=id.slice(2);
   const p=findParam(k);
-  if(!p)return;
+  if(!p||p.t==='list')return;
   if(p.t==='range')S[k]=parseFloat(e.target.value);
   else if(p.t==='check')S[k]=e.target.checked;
   else S[k]=e.target.value;
   if(k==='arch'&&ARCH_DEFAULTS[S.arch])Object.assign(S,ARCH_DEFAULTS[S.arch]);
-  if(k==='arch'||k==='pattern'||k==='roseStyle'||k==='latCell'||k==='warp'||k==='subFoils'||k==='secOn'){syncControls();}
-  else{
-    const vv=document.getElementById('v_'+k);
-    if(vv)vv.textContent=fmtVal(p,S[k]);
-  }
-  if(k==='arch'||k==='span'||k==='height')view.fit=true;
-  saveState();
-  schedule(!!p.g);
+  afterEdit(k,p);
 }
 
 function syncControls(){
@@ -2134,9 +2352,9 @@ function syncControls(){
     const el=document.getElementById('c_'+p.k);
     if(!el)return;
     if(p.t==='check')el.checked=!!S[p.k];
-    else el.value=S[p.k];
-    const vv=document.getElementById('v_'+p.k);
-    if(vv)vv.textContent=fmtVal(p,S[p.k]);
+    else if(p.t==='range')fitSlider(p);
+    else if(p.t!=='list')el.value=S[p.k];
+    setValText(p.k);
     const row=el.closest('.row');
     if(row)row.hidden=p.show?!p.show(S):false;
   }));
@@ -2159,6 +2377,14 @@ function loadState(){
       if(S.rowScheme==='modulor')S.rowScheme='modBlue';
     }
   }catch(e){}
+  fixLists();
+}
+
+function fixLists(){
+  ['customCols','customRows'].forEach(k=>{
+    const a=S[k];
+    if(!Array.isArray(a)||!a.length||a.length>30||!a.every(x=>typeof x==='number'&&isFinite(x)&&x>0&&x<=100000))S[k]=DEFAULT[k].slice();
+  });
 }
 
 
@@ -2283,6 +2509,178 @@ function shuffleBack(){
   schedule(true);
   updateBackBtn();
   toast('Back to the previous design');
+}
+
+
+function paramKeys(){
+  const o=[];
+  SECTIONS.forEach(sec=>sec.p.forEach(p=>o.push(p.k)));
+  return o;
+}
+
+function snapshotDesign(){
+  const o={};
+  paramKeys().forEach(k=>{
+    if(VIEW_KEYS.indexOf(k)>=0)return;
+    o[k]=Array.isArray(S[k])?S[k].slice():S[k];
+  });
+  return o;
+}
+
+function sanitizeDesign(raw){
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))return null;
+  const out={};
+  SECTIONS.forEach(sec=>sec.p.forEach(p=>{
+    if(VIEW_KEYS.indexOf(p.k)>=0)return;
+    if(!Object.prototype.hasOwnProperty.call(raw,p.k))return;
+    const v=raw[p.k];
+    if(p.t==='range'){
+      if(typeof v!=='number'||!isFinite(v))return;
+      const hr=HARD[p.k]||[p.min,p.max];
+      let x=Math.min(hr[1],Math.max(hr[0],v));
+      if(INTS.has(p.k))x=Math.round(x);
+      out[p.k]=x;
+    }else if(p.t==='check'){
+      if(typeof v==='boolean')out[p.k]=v;
+    }else if(p.t==='select'){
+      if(p.o.some(o=>o[0]===v))out[p.k]=v;
+    }else if(p.t==='list'){
+      if(Array.isArray(v)&&v.length>=1&&v.length<=(p.maxN||20)&&v.every(x=>typeof x==='number'&&isFinite(x)&&x>0&&x<=100000))out[p.k]=v.slice();
+    }
+  }));
+  return out;
+}
+
+function cleanPresetName(n){
+  return String(n===null||n===undefined?'':n).replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,60);
+}
+
+function loadUserPresets(){
+  userPresets=[];
+  try{
+    const raw=localStorage.getItem(UPRE_KEY);
+    if(!raw)return;
+    const a=JSON.parse(raw);
+    if(!Array.isArray(a))return;
+    a.slice(0,100).forEach(x=>{
+      if(!x||typeof x.n!=='string')return;
+      const n=cleanPresetName(x.n),d=sanitizeDesign(x.s);
+      if(n&&d)userPresets.push({n,s:d});
+    });
+  }catch(e){}
+}
+function saveUserPresets(){
+  try{localStorage.setItem(UPRE_KEY,JSON.stringify(userPresets));}catch(e){}
+}
+
+function fillPresetMenu(){
+  const sel=document.getElementById('presetSel');
+  let h='<option value="">Presets…</option>'+PRESETS.map((p,i)=>`<option value="p:${i}">${escapeHtml(p.n)}</option>`).join('');
+  if(userPresets.length)h+='<optgroup label="My presets">'+userPresets.map((p,i)=>`<option value="u:${i}">${escapeHtml(p.n)}</option>`).join('')+'</optgroup>';
+  h+='<optgroup label="Manage"><option value="save">Save current design as…</option>';
+  if(userPresets.length)h+='<option value="del">Delete a saved preset…</option><option value="exp">Export my presets…</option>';
+  h+='<option value="imp">Import presets…</option></optgroup>';
+  sel.innerHTML=h;
+  sel.value='';
+}
+
+function askDialog(opt){
+  return new Promise(resolve=>{
+    const m=document.getElementById('modal');
+    const yes=document.getElementById('modalYes'),no=document.getElementById('modalNo');
+    const inp=document.getElementById('modalInput'),sl=document.getElementById('modalSelect');
+    document.getElementById('modalMsg').textContent=opt.message;
+    yes.textContent=opt.confirmLabel||'OK';
+    inp.hidden=!opt.input;
+    sl.hidden=!opt.options;
+    if(opt.input){inp.value=opt.value||'';}
+    if(opt.options){sl.innerHTML=opt.options.map(o=>`<option value="${escapeAttr(o[0])}">${escapeHtml(o[1])}</option>`).join('');}
+    m.hidden=false;
+    const done=v=>{
+      m.hidden=true;inp.hidden=true;sl.hidden=true;
+      yes.onclick=null;no.onclick=null;inp.onkeydown=null;
+      resolve(v);
+    };
+    yes.onclick=()=>done(opt.input?inp.value:(opt.options?sl.value:true));
+    no.onclick=()=>done(null);
+    inp.onkeydown=e=>{
+      if(e.key==='Enter'){e.preventDefault();done(inp.value);}
+      else if(e.key==='Escape'){e.preventDefault();done(null);}
+    };
+    if(opt.input)setTimeout(()=>{inp.focus();inp.select();},0);
+  });
+}
+
+async function saveCurrentAs(){
+  const name=await askDialog({message:'Name this design',input:true,value:'',confirmLabel:'Save'});
+  if(name===null)return;
+  const n=cleanPresetName(name);
+  if(!n){toast('Give the design a name first');return;}
+  const idx=userPresets.findIndex(x=>x.n.toLowerCase()===n.toLowerCase());
+  if(idx>=0){
+    const ok=await confirmDialog('Replace the saved design "'+userPresets[idx].n+'"?','Replace');
+    if(!ok)return;
+  }else if(userPresets.length>=100){
+    toast('You can keep up to 100 saved designs');
+    return;
+  }
+  const entry={n:idx>=0?userPresets[idx].n:n,s:snapshotDesign()};
+  if(idx>=0)userPresets[idx]=entry;else userPresets.push(entry);
+  saveUserPresets();
+  fillPresetMenu();
+  toast('Saved "'+entry.n+'"');
+}
+
+async function deleteUserPreset(){
+  if(!userPresets.length)return;
+  const v=await askDialog({message:'Delete which saved design?',options:userPresets.map((x,i)=>[String(i),x.n]),confirmLabel:'Delete'});
+  if(v===null)return;
+  const i=parseInt(v,10);
+  if(!userPresets[i])return;
+  const ok=await confirmDialog('Delete "'+userPresets[i].n+'"? This cannot be undone.','Delete');
+  if(!ok)return;
+  const gone=userPresets.splice(i,1)[0];
+  saveUserPresets();
+  fillPresetMenu();
+  toast('Deleted "'+gone.n+'"');
+}
+
+function exportUserPresets(){
+  if(!userPresets.length)return;
+  downloadText('tracery-my-presets.json',JSON.stringify({app:'TRACERY',version:APP_VERSION,presets:userPresets},null,2),'application/json');
+  toast('Exported '+userPresets.length+' saved design'+(userPresets.length===1?'':'s'));
+}
+
+function importPresetsText(text){
+  let data;
+  try{data=JSON.parse(text);}catch(e){return {error:'That file is not valid JSON'};}
+  const list=Array.isArray(data)?data:(data&&Array.isArray(data.presets)?data.presets:null);
+  if(!list)return {error:'No presets found in that file'};
+  let added=0,replaced=0,skipped=0;
+  list.slice(0,100).forEach(x=>{
+    if(!x||typeof x.n!=='string'){skipped++;return;}
+    const n=cleanPresetName(x.n),d=sanitizeDesign(x.s);
+    if(!n||!d||!Object.keys(d).length){skipped++;return;}
+    const i=userPresets.findIndex(u=>u.n.toLowerCase()===n.toLowerCase());
+    if(i>=0){userPresets[i]={n:userPresets[i].n,s:d};replaced++;}
+    else if(userPresets.length<100){userPresets.push({n,s:d});added++;}
+    else skipped++;
+  });
+  saveUserPresets();
+  fillPresetMenu();
+  return {added,replaced,skipped};
+}
+
+function applyUserPreset(i){
+  const u=userPresets[i];
+  if(!u)return;
+  S=Object.assign({},DEFAULT,u.s);
+  fixLists();
+  view.fit=true;
+  needCam=true;
+  syncControls();
+  saveState();
+  schedule(true);
 }
 
 function applyPreset(i){
@@ -2530,11 +2928,30 @@ function setupPointer(){
 
 function initUi(){
   const sel=document.getElementById('presetSel');
-  sel.innerHTML='<option value="">Presets…</option>'+PRESETS.map((p,i)=>`<option value="${i}">${escapeHtml(p.n)}</option>`).join('');
-  sel.addEventListener('change',()=>{
-    if(sel.value==='')return;
-    applyPreset(parseInt(sel.value,10));
+  fillPresetMenu();
+  sel.addEventListener('change',async()=>{
+    const v=sel.value;
     sel.value='';
+    if(!v)return;
+    if(v.indexOf('p:')===0)applyPreset(parseInt(v.slice(2),10));
+    else if(v.indexOf('u:')===0)applyUserPreset(parseInt(v.slice(2),10));
+    else if(v==='save')await saveCurrentAs();
+    else if(v==='del')await deleteUserPreset();
+    else if(v==='exp')exportUserPresets();
+    else if(v==='imp')document.getElementById('importFile').click();
+  });
+  document.getElementById('importFile').addEventListener('change',e=>{
+    const f=e.target.files&&e.target.files[0];
+    e.target.value='';
+    if(!f)return;
+    if(f.size>1000000){toast('That file is too large to be a presets file');return;}
+    const r=new FileReader();
+    r.onload=()=>{
+      const res=importPresetsText(String(r.result));
+      if(res.error)toast(res.error);
+      else toast('Imported '+res.added+' new, '+res.replaced+' replaced'+(res.skipped?', '+res.skipped+' skipped':''));
+    };
+    r.readAsText(f);
   });
   document.getElementById('btnShuffle').addEventListener('click',()=>doShuffle(false));
   document.getElementById('btnShuffleAll').addEventListener('click',()=>doShuffle(true));
@@ -2575,6 +2992,7 @@ function initUi(){
 
 function start(){
   loadState();
+  loadUserPresets();
   let theme='dark';
   try{theme=localStorage.getItem(THEME_KEY)||'dark';}catch(e){}
   applyTheme(theme);
