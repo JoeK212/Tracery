@@ -1,0 +1,2581 @@
+<!DOCTYPE html>
+<!--
+TRACERY
+Architectural window geometry explorer — compass-struck heads, tracery, rose and lattice windows in side-by-side 2D construction and 3D form.
+Joe.K · axisbim.io
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="TRACERY — explore the geometry of architectural windows, from Romanesque and Gothic tracery to Islamic lattice, Art Nouveau and Modulor grids, in 2D construction and 3D form.">
+<meta name="theme-color" id="themeColorMeta" content="#0E1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>TRACERY</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#0E1220;
+  --card:#141829;
+  --ink:#E7E4F4;
+  --accent:#7C5CFC;
+  --mute:#8A87A8;
+  --line:#272C48;
+  --stone:#3A3F62;
+  --glass:rgba(124,150,255,.30);
+  --cons:#B9A6FF;
+  --dim:#E8B35C;
+  --btnbg:#1B2040;
+  --warn:#E8715C;
+}
+:root[data-theme="light"]{
+  --paper:#F4F1EA;
+  --card:#FFFFFF;
+  --ink:#1B1830;
+  --accent:#6A48F0;
+  --mute:#6F6B88;
+  --line:#D8D3C6;
+  --stone:#CFC6B2;
+  --glass:rgba(70,110,230,.32);
+  --cons:#6A48F0;
+  --dim:#B0741B;
+  --btnbg:#ECE8DC;
+  --warn:#C0452F;
+}
+*{box-sizing:border-box;border-radius:0}
+[hidden]{display:none!important}
+input[type=text],input[type=url],input[type=search]{font-size:16px}
+html,body{height:100%;margin:0}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:'Inter',system-ui,sans-serif;font-size:13px;
+  overscroll-behavior-y:contain;
+  -webkit-text-size-adjust:100%;
+}
+#app{display:flex;flex-direction:column;height:100%;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.top{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--card);flex-wrap:wrap}
+.brand{font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:.22em;font-size:15px}
+.brand small{font-family:'Space Mono',monospace;font-weight:400;letter-spacing:0;color:var(--mute);margin-left:10px;font-size:11px}
+.top .sp{flex:1}
+button,select,input{font-family:inherit;font-size:12px;color:var(--ink)}
+button{background:var(--btnbg);border:1px solid var(--line);padding:6px 11px;cursor:pointer;color:var(--ink)}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+select{background:var(--btnbg);border:1px solid var(--line);padding:6px 8px;color:var(--ink);max-width:100%}
+.work{flex:1;min-height:0;display:grid;grid-template-columns:318px 1fr}
+#side{overflow-y:auto;border-right:1px solid var(--line);background:var(--card);padding:4px 0 24px}
+.sec{border-bottom:1px solid var(--line)}
+.sec>summary{display:flex;align-items:center;cursor:pointer;list-style:none;padding:10px 14px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);user-select:none}
+.sec>summary::-webkit-details-marker{display:none}
+.sec>summary>span{flex:1}
+.info{padding:1px 8px;font-size:11px;font-family:'Space Mono',monospace;color:var(--mute);background:none}
+.sec>summary::before{content:'+ ';color:var(--mute)}
+.sec[open]>summary::before{content:'– '}
+.rows{padding:0 14px 12px;display:grid;gap:9px}
+.row{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center}
+.row[hidden]{display:none}
+.row label{color:var(--mute);font-size:11px}
+.row .val{font-family:'Space Mono',monospace;font-size:11px;color:var(--ink);text-align:right}
+.row input[type=range]{grid-column:1/3;width:100%;accent-color:var(--accent);height:18px;margin:0}
+.row select{grid-column:1/3;width:100%}
+.row.chk{grid-template-columns:1fr}
+.row.chk label{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:12px;cursor:pointer}
+.row.chk input{accent-color:var(--accent)}
+#main{display:grid;grid-template-rows:minmax(0,1fr) auto;min-width:0;min-height:0}
+.panes{display:grid;grid-template-columns:1fr 1fr;min-height:0;min-width:0}
+.pane{display:flex;flex-direction:column;min-width:0;min-height:0;border-right:1px solid var(--line)}
+.pane:last-child{border-right:none}
+.pane-h{display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--line);font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--mute);flex-wrap:wrap}
+.pane-h b{color:var(--ink);font-weight:700}
+.pane-h .sp{flex:1}
+.pane-h button{padding:3px 8px;font-size:11px}
+.pane-h label{display:flex;align-items:center;gap:4px;letter-spacing:0;font-family:'Inter',sans-serif;font-size:11px;cursor:pointer;color:var(--ink)}
+.pane-h input{accent-color:var(--accent);margin:0}
+.stage{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none}
+.stage canvas{display:block;position:absolute;inset:0}
+.nogl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mute);font-family:'Space Mono',monospace;font-size:12px;padding:20px;text-align:center}
+.analysis{border-top:1px solid var(--line);background:var(--card);padding:10px 14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px 18px;max-height:170px;overflow-y:auto}
+.kv{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dotted var(--line);padding:2px 0;font-size:12px}
+.kv span:first-child{color:var(--mute)}
+.kv span:last-child{font-family:'Space Mono',monospace;font-size:11px;text-align:right}
+.kv.warn span:last-child{color:var(--warn)}
+.note{grid-column:1/-1;color:var(--mute);font-size:12px;line-height:1.45;padding-top:4px}
+footer{padding:5px 14px;border-top:1px solid var(--line);font-family:'Space Mono',monospace;font-size:10px;color:var(--mute);background:var(--card)}
+footer a{color:var(--mute);text-decoration:none}
+footer a:hover{color:var(--accent)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:9px 16px;font-size:12px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;max-width:80vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.modal{position:fixed;inset:0;background:rgba(5,7,14,.62);display:flex;align-items:center;justify-content:center;z-index:60}
+.modal[hidden]{display:none}
+.modal .box{background:var(--card);border:1px solid var(--line);padding:20px;max-width:340px;width:86%}
+.modal .box p{margin:0 0 16px;line-height:1.45;font-size:13px}
+.modal .box .acts{display:flex;gap:8px;justify-content:flex-end}
+.block{position:fixed;inset:0;background:var(--paper);z-index:100;display:none;align-items:center;justify-content:center;flex-direction:column;padding:32px;text-align:center;gap:14px}
+.block h1{font-family:'Space Grotesk',sans-serif;letter-spacing:.3em;font-size:22px;margin:0}
+.block p{color:var(--mute);max-width:300px;line-height:1.5;margin:0}
+.block .bar{width:64px;height:6px;background:var(--accent)}
+.help{position:fixed;inset:0;z-index:120;background:var(--paper);display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.help-top{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--card)}
+.help-top .sp{flex:1}
+.help-top input{background:var(--btnbg);border:1px solid var(--line);padding:6px 9px;color:var(--ink);width:210px;max-width:38vw}
+.help-body{flex:1;min-height:0;display:grid;grid-template-columns:210px minmax(0,1fr)}
+.help-nav{border-right:1px solid var(--line);background:var(--card);padding:8px 0;overflow-y:auto;display:flex;flex-direction:column}
+.help-nav button{text-align:left;border:none;border-left:3px solid transparent;background:none;padding:10px 16px;color:var(--mute);font-size:13px}
+.help-nav button.on{color:var(--ink);border-left-color:var(--accent);background:var(--btnbg)}
+.help-content{overflow-y:auto;padding:20px 28px 70px;line-height:1.6;font-size:14px}
+.help-content>*{max-width:780px}
+.help-content h2{font-family:'Space Grotesk',sans-serif;font-size:17px;margin:26px 0 8px}
+.help-content>h2:first-child,.help-content>.item>h2:first-child{margin-top:0}
+.help-content p{margin:0 0 10px}
+.help-content ul,.help-content ol{margin:0 0 10px;padding-left:22px}
+.help-content li{margin-bottom:5px}
+.help-content code{font-family:'Space Mono',monospace;font-size:12px;background:var(--btnbg);padding:1px 5px;word-break:break-word}
+.help-content dt{font-weight:600;margin-top:10px}
+.help-content dd{margin:2px 0 0;color:var(--mute)}
+.help-content .live{border-left:3px solid var(--accent);background:var(--card);padding:8px 12px;margin:12px 0 26px;font-size:13px}
+.help-content .live b{color:var(--accent);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-right:10px}
+.help-content .topic{padding-bottom:6px;border-bottom:1px solid var(--line);margin-bottom:6px;scroll-margin-top:64px}
+.help-content .live.off{border-left-color:var(--line);background:none;color:var(--mute);padding:4px 12px;margin:8px 0 22px}
+.help-content .live.off b{color:var(--mute)}
+.help-content .topic.flash{background:var(--card)}
+.lvlbar{display:flex;position:sticky;top:-20px;background:var(--paper);padding:8px 0;z-index:2}
+.lvlbar button{flex:1;max-width:160px;border-right:none;padding:8px 10px}
+.lvlbar button:last-child{border-right:1px solid var(--line)}
+.lvlbar button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.lvlnote{color:var(--mute);font-size:12px;margin:2px 0 14px}
+.cmp{position:fixed;inset:0;z-index:45;background:var(--paper);display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.cmp[hidden]{display:none}
+.cmp-top{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--card)}
+.cmp-top .sp{flex:1}
+.cmp-ctl{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--card)}
+.cmp-ctl label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mute)}
+.cmp-ctl label span{font-family:'Space Mono',monospace;color:var(--ink);min-width:20px}
+.cmp-ctl input[type=range]{width:92px;accent-color:var(--accent);margin:0}
+.cmp-ctl input[type=checkbox]{accent-color:var(--accent);margin:0}
+.cmp-views{flex:1 1 0;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:minmax(0,1fr);overflow:hidden}
+.cmp-v{display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden;border-right:1px solid var(--line)}
+.cmp-v:last-child{border-right:none}
+.cmp-h{padding:6px 12px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--mute);border-bottom:1px solid var(--line)}
+.cmp-h b{color:var(--ink)}
+.cmp-h small{display:block;letter-spacing:0;font-size:10px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmp-stage{position:relative;flex:1 1 0;min-height:0;overflow:hidden}
+.cmp-stage canvas{position:absolute;inset:0;display:block}
+.cmp-tab{flex:0 0 auto;border-top:1px solid var(--line);background:var(--card);max-height:38%;overflow-y:auto;padding:8px 14px}
+.cmp-tab table{width:100%;border-collapse:collapse;font-size:12px}
+.cmp-tab th,.cmp-tab td{text-align:left;padding:3px 8px;border-bottom:1px dotted var(--line)}
+.cmp-tab th{color:var(--mute);font-weight:500;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.cmp-tab td.n{font-family:'Space Mono',monospace;font-size:11px;white-space:nowrap}
+.cmp-tab td.w{color:var(--mute);font-size:11px}
+.cmp-note{line-height:1.5;font-size:12px;padding:8px 0 2px}
+.cmp-note p{margin:0 0 6px}
+@media (max-width:760px){
+  .help-body{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+  .help-nav{flex-direction:row;overflow-x:auto;overflow-y:hidden;border-right:none;border-bottom:1px solid var(--line);padding:0}
+  .help-nav button{white-space:nowrap;border-left:none;border-bottom:3px solid transparent;padding:12px 14px}
+  .help-nav button.on{border-bottom-color:var(--accent)}
+  .help-content{padding:16px 16px 70px}
+  .help-top input{width:120px;max-width:34vw}
+  .lvlbar{top:-16px}
+}
+@media (max-width:1180px){
+  .panes{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
+  .pane{border-right:none;border-bottom:1px solid var(--line)}
+  .pane:last-child{border-bottom:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="brand">TRACERY<small>window geometry</small></div>
+    <select id="presetSel" aria-label="Preset"></select>
+    <span class="sp"></span>
+    <button id="btnHelp" title="Guide and how the math works">Help</button>
+    <button id="btnCmp" class="pri" title="Compare Mondrian and Modulor Blue series geometry">Compare</button>
+    <button id="btnSeed" title="New random seed for organic grids">Reseed</button>
+    <button id="btnSvg" title="Export 2D linework as SVG">SVG</button>
+    <button id="btnReset">Reset</button>
+    <button id="btnUnits" title="Switch between millimetres and feet-inches">Imperial</button>
+    <button id="btnTheme">Light</button>
+  </header>
+  <div class="work">
+    <aside id="side"></aside>
+    <div id="main">
+      <div class="panes">
+        <section class="pane">
+          <div class="pane-h"><b>2D</b> CONSTRUCTION <span class="sp"></span>
+            <label><input type="checkbox" id="ly_lyStone"> stone</label>
+            <label><input type="checkbox" id="ly_lyGlass"> glass</label>
+            <label><input type="checkbox" id="ly_lyCons"> construction</label>
+            <label><input type="checkbox" id="ly_lyDims"> dims</label>
+            <button id="btnFit">Fit</button>
+          </div>
+          <div class="stage" id="stage2d"><canvas id="cv2d"></canvas></div>
+        </section>
+        <section class="pane">
+          <div class="pane-h"><b>3D</b> FORM <span class="sp"></span>
+            <button data-view="front">Front</button>
+            <button data-view="obl">Oblique</button>
+            <button data-view="side">Section</button>
+          </div>
+          <div class="stage" id="stage3d"></div>
+        </section>
+      </div>
+      <section class="analysis" id="analysis"></section>
+    </div>
+  </div>
+  <footer id="footVersion"></footer>
+</div>
+<div class="cmp" id="cmp" hidden>
+  <div class="cmp-top"><div class="brand">COMPARE<small>Mondrian · Modulor</small></div><span class="sp"></span><button id="cmHelp">Help</button><button id="cmClose">Close</button></div>
+  <div class="cmp-ctl" id="cmCtl"></div>
+  <div class="cmp-views">
+    <div class="cmp-v"><div class="cmp-h"><b>MODULOR</b> <span id="cmTitleB">BLUE SERIES</span><small id="cmInfoB"></small></div><div class="cmp-stage"><canvas id="cvB"></canvas></div></div>
+    <div class="cmp-v"><div class="cmp-h"><b>OVERLAY</b> LINES COMPARED<small id="cmInfoO"></small></div><div class="cmp-stage"><canvas id="cvO"></canvas></div></div>
+    <div class="cmp-v"><div class="cmp-h"><b>MONDRIAN</b> NEOPLASTIC STYLE<small id="cmInfoM"></small></div><div class="cmp-stage"><canvas id="cvM"></canvas></div></div>
+  </div>
+  <div class="cmp-tab" id="cmTab"></div>
+</div>
+<div class="help" id="help" hidden>
+  <div class="help-top"><div class="brand">HELP<small>guide · the math</small></div><span class="sp"></span><input type="search" id="helpSearch" placeholder="Search" aria-label="Search help"><button id="helpClose">Close</button></div>
+  <div class="help-body"><nav class="help-nav" id="helpNav"></nav><div class="help-content" id="helpContent"></div></div>
+</div>
+<div class="block" id="block">
+  <div class="bar"></div>
+  <h1>TRACERY</h1>
+  <p>This tool needs a tablet or desktop screen. Open it on a wider display to work with the 2D and 3D views side by side.</p>
+  <button class="pri" id="blockHelp">Read the guide</button>
+</div>
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal" hidden><div class="box"><p id="modalMsg"></p><div class="acts"><button id="modalNo">Cancel</button><button class="pri" id="modalYes">OK</button></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const APP_VERSION='1.3.0';
+const SC=100;
+const TAU=Math.PI*2;
+const PHI=(1+Math.sqrt(5))/2;
+const FIB=[1,1,2,3,5,8,13,21,34,55,89,144,233,377];
+const RED=[4,6,10,16,27,43,70,113,183,296,479,775,1254,2029,3283,5312];
+const BLUE=[8,13,20,33,53,86,140,226,366,592,958,1550,2508,4058,6566,10624];
+const MOND_PAL={R:'#C8281E',Y:'#F2C80F',B:'#1B3F94',K:'#151515',W:'#EDE9DD'};
+const CORB_PAL=['#EFE8D6','#B23A2E','#1F4E79','#C8932A'];
+const FOIL_OV=0.3;
+const STORE_KEY='tracery.state.v1';
+const THEME_KEY='tracery.theme';
+const UNITS_KEY='tracery.units';
+let UNITS='metric';
+const CL=window.ClipperLib;
+
+const OPTS_ARCH=[['round','Semicircular (Romanesque)'],['segmental','Segmental'],['horseshoe','Horseshoe (Moorish)'],['pointed','Pointed — drop · equilateral · lancet'],['tudor','Four-centred (Tudor)'],['ogee','Ogee'],['multifoil','Multifoil / cusped'],['ellipse','Semi-elliptical'],['parabola','Parabolic'],['catenary','Catenary (Gaudí)'],['flat','Flat lintel'],['circle','Circular — oculus · rose']];
+const OPTS_PATTERN=[['plain','Plain light'],['mullions','Mullioned lights'],['geometric','Geometric — sub-lights + circles'],['rose','Rose / radial'],['grid','Grid — Modulor · organic'],['mondrian','Mondrian — asymmetric composition'],['lattice','Lattice — jali · tilings']];
+const OPTS_SCHEME=[['uniform','Uniform'],['golden','Golden ratio'],['fibonacci','Fibonacci'],['modBlue','Modulor Blue series'],['modRed','Modulor Red series']];
+const OPTS_ROSE=[['plate','Plate — circles'],['wheel','Wheel — spokes']];
+const OPTS_LAT=[['square','Square'],['hexagon','Hexagon'],['octagon','Octagon + square (4.8.8)'],['star','Star + diamond']];
+
+const ARCH_DEFAULTS={
+  segmental:{rise:0.22},
+  tudor:{rise:0.3,r1:0.14,phi:40},
+  ogee:{rise:0.85,r1:0.15,phi:60},
+  ellipse:{rise:0.4},
+  parabola:{rise:0.55},
+  catenary:{rise:0.8}
+};
+
+const ARCH_NOTES={
+  round:'One centre on the springing line; rise equals half the span. The Roman and Romanesque head.',
+  segmental:'One centre below the springing line; rise is less than half the span. Wide, low openings.',
+  horseshoe:'Centre lifted above the springing line so the arc exceeds 180°. Visigothic and Moorish.',
+  pointed:'Two centres on the springing line. Radius = span gives the equilateral arch; larger radii give lancets, smaller give drop arches.',
+  tudor:'Four centres: two tight corner arcs struck from the springing line, two large flattened arcs meeting at a shallow point. Perpendicular period.',
+  ogee:'Convex lower arcs reverse into concave upper arcs at an inflection, meeting in a cusp. Late Gothic, Mamluk and Mughal.',
+  multifoil:'Lobes struck on equal divisions of a base arch; cusps point inward. Gothic trefoil through Islamic scalloped arches.',
+  ellipse:'Semi-ellipse with continuously varying curvature rather than struck arcs.',
+  parabola:'y = rise · (1 − x²/h²). Curvature concentrates at the crown.',
+  catenary:'Inverted hanging-chain curve, the pure compression line for a uniformly loaded arch. Gaudí.',
+  flat:'Rectilinear opening with a lintel.',
+  circle:'Circular opening for oculi and rose windows.'
+};
+
+const DEFAULT={
+  arch:'pointed',span:1000,height:3200,rise:0.3,rho:1,stilt:0.3,r1:0.15,phi:45,lobes:5,bulge:0.8,
+  pattern:'geometric',lights:2,scheme:'uniform',sym:false,
+  subRho:1,subSpring:0.8,subFoils:0,subBulge:0.8,circles:1,minR:40,foilN:6,
+  petals:8,roseStyle:'plate',
+  rowScheme:'uniform',cols:3,rows:6,warp:0,warpLen:1400,seed:7,
+  latCell:'star',pitch:240,rot:0,starPts:8,starDepth:0.55,dual:true,
+  mondSplits:8,mondSeed:4,polychrome:false,
+  bar:42,frame:60,margin:350,
+  wallDepth:450,tracDepth:200,setback:120,chamfer:8,glassOp:0.55,stained:true,explode:0,edges:true,wire:false,sunAz:35,sunEl:45,
+  lyStone:true,lyGlass:true,lyCons:true,lyDims:true,
+  cmpSeed:4,cmpSplits:8,cmpSeries:'blue',cmpCols:3,cmpRows:4,cmpMirror:false,cmpPhi:true,cmpW:1130,cmpH:1830
+};
+
+const PRESETS=[
+  {n:'Romanesque twin lights + oculus',s:{arch:'round',span:900,height:2600,pattern:'geometric',lights:2,subRho:0.5,subSpring:0.85,subFoils:0,circles:1,foilN:0,bar:46,frame:60}},
+  {n:'Early English lancet triplet',s:{arch:'pointed',rho:1,span:1100,height:3400,pattern:'geometric',lights:3,subRho:1.8,subSpring:0.78,subFoils:0,circles:0,bar:44,frame:60}},
+  {n:'Geometric Gothic — two lights + sexfoil',s:{arch:'pointed',rho:1,span:1000,height:3600,pattern:'geometric',lights:2,subRho:1,subSpring:0.62,subFoils:0,circles:1,foilN:6,bar:44,frame:62}},
+  {n:'Rayonnant rose — 12 petals',s:{arch:'circle',span:1500,pattern:'rose',roseStyle:'plate',petals:12,foilN:3,circles:12,minR:25,bar:36,frame:50}},
+  {n:'Wheel window — 10 spokes',s:{arch:'circle',span:1400,pattern:'rose',roseStyle:'wheel',petals:10,bar:40,frame:60}},
+  {n:'Perpendicular — Tudor grid',s:{arch:'tudor',span:1200,height:3200,rise:0.3,r1:0.12,phi:40,pattern:'grid',cols:4,rows:7,scheme:'uniform',rowScheme:'uniform',warp:0,bar:40,frame:55}},
+  {n:'Ogee head — twin trefoil lights',s:{arch:'ogee',span:1000,height:3400,rise:0.85,r1:0.15,phi:60,pattern:'geometric',lights:2,subRho:0.5,subSpring:0.9,subFoils:3,subBulge:0.8,circles:0,bar:42,frame:56}},
+  {n:'Moorish horseshoe — octagon jali',s:{arch:'horseshoe',span:1000,height:3000,stilt:0.25,pattern:'lattice',latCell:'octagon',pitch:210,rot:0,bar:34,frame:50}},
+  {n:'Mamluk star jali',s:{arch:'pointed',rho:1,span:1100,height:3400,pattern:'lattice',latCell:'star',starPts:8,starDepth:0.55,pitch:260,dual:true,rot:0,bar:30,frame:50}},
+  {n:'Scalloped multifoil arch',s:{arch:'multifoil',rho:0.5,span:1000,height:2800,lobes:9,bulge:0.75,pattern:'mullions',lights:1,bar:40,frame:60}},
+  {n:'Art Nouveau whiplash',s:{arch:'parabola',span:900,height:3000,rise:0.6,pattern:'grid',cols:3,rows:7,scheme:'golden',rowScheme:'golden',sym:false,warp:85,warpLen:1500,seed:11,bar:34,frame:50}},
+  {n:'Gaudí catenary',s:{arch:'catenary',span:1000,height:3200,rise:0.9,pattern:'grid',cols:5,rows:8,scheme:'uniform',rowScheme:'uniform',warp:35,warpLen:1200,seed:3,bar:32,frame:48}},
+  {n:'Mondrian-style composition',s:{arch:'flat',span:1130,height:1830,pattern:'mondrian',mondSplits:8,mondSeed:4,bar:46,frame:46,stained:true}},
+  {n:'Modulor Blue grid — Corbusier polychromy',s:{arch:'flat',span:1130,height:1830,pattern:'grid',cols:3,rows:4,scheme:'modBlue',rowScheme:'modBlue',sym:false,warp:0,polychrome:true,seed:5,bar:40,frame:40,stained:true}},
+  {n:'Modernist Modulor grid',s:{arch:'flat',span:1130,height:2260,pattern:'grid',cols:4,rows:5,scheme:'modBlue',rowScheme:'modBlue',sym:false,warp:0,polychrome:true,bar:30,frame:30}}
+];
+
+const SECTIONS=[
+  {id:'open',title:'Opening',p:[
+    {k:'arch',l:'Head',t:'select',o:OPTS_ARCH,g:1},
+    {k:'span',l:'Span',t:'range',min:400,max:3000,step:10,u:'mm',g:1},
+    {k:'height',l:'Height to apex',t:'range',min:800,max:6000,step:10,u:'mm',g:1,show:s=>s.arch!=='circle'},
+    {k:'rise',l:'Rise ÷ span',t:'range',min:0.05,max:1.2,step:0.01,g:1,show:s=>['segmental','tudor','ogee','ellipse','parabola','catenary'].includes(s.arch)},
+    {k:'rho',l:'Radius ÷ span (0.5 round · 1 equilateral)',t:'range',min:0.5,max:2.4,step:0.01,g:1,show:s=>['pointed','multifoil'].includes(s.arch)},
+    {k:'stilt',l:'Centre lift ÷ half-span',t:'range',min:0.02,max:0.9,step:0.01,g:1,show:s=>s.arch==='horseshoe'},
+    {k:'r1',l:'Corner radius ÷ span',t:'range',min:0.04,max:0.4,step:0.005,g:1,show:s=>['tudor','ogee'].includes(s.arch)},
+    {k:'phi',l:'Junction angle',t:'range',min:15,max:85,step:1,u:'°',g:1,show:s=>['tudor','ogee'].includes(s.arch)},
+    {k:'lobes',l:'Lobes',t:'range',min:3,max:13,step:1,g:1,show:s=>s.arch==='multifoil'},
+    {k:'bulge',l:'Lobe depth',t:'range',min:0.3,max:1.4,step:0.01,g:1,show:s=>s.arch==='multifoil'}
+  ]},
+  {id:'trac',title:'Tracery',p:[
+    {k:'pattern',l:'Pattern',t:'select',o:OPTS_PATTERN,g:1},
+    {k:'lights',l:'Lights',t:'range',min:1,max:6,step:1,g:1,show:s=>['mullions','geometric'].includes(s.pattern)},
+    {k:'scheme',l:'Division scheme',t:'select',o:OPTS_SCHEME,g:1,show:s=>['mullions','geometric','grid'].includes(s.pattern)},
+    {k:'sym',l:'Mirror divisions',t:'check',g:1,show:s=>['mullions','geometric','grid'].includes(s.pattern)},
+    {k:'subRho',l:'Sub-light radius ÷ span',t:'range',min:0.5,max:2.4,step:0.01,g:1,show:s=>s.pattern==='geometric'},
+    {k:'subSpring',l:'Sub-light springing',t:'range',min:0.2,max:1,step:0.01,g:1,show:s=>s.pattern==='geometric'},
+    {k:'subFoils',l:'Sub-light cusps (0 = none)',t:'range',min:0,max:7,step:1,g:1,show:s=>s.pattern==='geometric'},
+    {k:'subBulge',l:'Sub-light cusp depth',t:'range',min:0.3,max:1.4,step:0.01,g:1,show:s=>s.pattern==='geometric'&&s.subFoils>=3},
+    {k:'circles',l:'Packed circles',t:'range',min:0,max:24,step:1,g:1,show:s=>s.pattern==='geometric'||(s.pattern==='rose'&&s.roseStyle==='plate')},
+    {k:'minR',l:'Smallest circle radius',t:'range',min:15,max:200,step:1,u:'mm',g:1,show:s=>s.pattern==='geometric'||(s.pattern==='rose'&&s.roseStyle==='plate')},
+    {k:'foilN',l:'Foil lobes (0 = plain)',t:'range',min:0,max:8,step:1,g:1,show:s=>s.pattern==='geometric'||(s.pattern==='rose'&&s.roseStyle==='plate')},
+    {k:'roseStyle',l:'Rose style',t:'select',o:OPTS_ROSE,g:1,show:s=>s.pattern==='rose'},
+    {k:'petals',l:'Petals / spokes',t:'range',min:4,max:24,step:1,g:1,show:s=>s.pattern==='rose'},
+    {k:'cols',l:'Columns',t:'range',min:1,max:10,step:1,g:1,show:s=>s.pattern==='grid'},
+    {k:'rows',l:'Rows',t:'range',min:1,max:14,step:1,g:1,show:s=>s.pattern==='grid'},
+    {k:'rowScheme',l:'Row scheme',t:'select',o:OPTS_SCHEME,g:1,show:s=>s.pattern==='grid'},
+    {k:'warp',l:'Organic warp',t:'range',min:0,max:160,step:1,u:'mm',g:1,show:s=>s.pattern==='grid'},
+    {k:'warpLen',l:'Warp wavelength',t:'range',min:300,max:3000,step:10,u:'mm',g:1,show:s=>s.pattern==='grid'&&s.warp>0},
+    {k:'seed',l:'Seed',t:'range',min:1,max:999,step:1,g:1,show:s=>s.pattern==='grid'&&s.warp>0},
+    {k:'polychrome',l:'Corbusier polychromy',t:'check',g:1,show:s=>s.pattern==='grid'},
+    {k:'mondSplits',l:'Splits',t:'range',min:3,max:16,step:1,g:1,show:s=>s.pattern==='mondrian'},
+    {k:'mondSeed',l:'Composition seed',t:'range',min:1,max:999,step:1,g:1,show:s=>s.pattern==='mondrian'},
+    {k:'latCell',l:'Cell',t:'select',o:OPTS_LAT,g:1,show:s=>s.pattern==='lattice'},
+    {k:'pitch',l:'Pitch',t:'range',min:110,max:600,step:5,u:'mm',g:1,show:s=>s.pattern==='lattice'},
+    {k:'rot',l:'Rotation',t:'range',min:0,max:90,step:1,u:'°',g:1,show:s=>s.pattern==='lattice'},
+    {k:'starPts',l:'Star points',t:'range',min:5,max:16,step:1,g:1,show:s=>s.pattern==='lattice'&&s.latCell==='star'},
+    {k:'starDepth',l:'Star depth (inner ÷ outer)',t:'range',min:0.25,max:0.9,step:0.01,g:1,show:s=>s.pattern==='lattice'&&s.latCell==='star'},
+    {k:'dual',l:'Diamond lights between stars',t:'check',g:1,show:s=>s.pattern==='lattice'&&s.latCell==='star'}
+  ]},
+  {id:'bars',title:'Bars & surround',p:[
+    {k:'bar',l:'Bar width',t:'range',min:10,max:140,step:1,u:'mm',g:1},
+    {k:'frame',l:'Jamb / frame width',t:'range',min:0,max:200,step:1,u:'mm',g:1},
+    {k:'margin',l:'Wall margin',t:'range',min:100,max:900,step:10,u:'mm',g:1}
+  ]},
+  {id:'three',title:'3D form',p:[
+    {k:'wallDepth',l:'Wall thickness',t:'range',min:100,max:1400,step:10,u:'mm'},
+    {k:'tracDepth',l:'Tracery depth',t:'range',min:40,max:700,step:5,u:'mm'},
+    {k:'setback',l:'Tracery setback from face',t:'range',min:0,max:700,step:5,u:'mm'},
+    {k:'chamfer',l:'Chamfer',t:'range',min:0,max:40,step:1,u:'mm'},
+    {k:'glassOp',l:'Glass opacity',t:'range',min:0.1,max:1,step:0.01},
+    {k:'stained',l:'Colour fills (tints · Mondrian · polychromy)',t:'check'},
+    {k:'explode',l:'Explode layers',t:'range',min:0,max:1500,step:10,u:'mm'},
+    {k:'edges',l:'Edge lines',t:'check'},
+    {k:'wire',l:'Wireframe',t:'check'},
+    {k:'sunAz',l:'Sun azimuth',t:'range',min:-90,max:90,step:1,u:'°'},
+    {k:'sunEl',l:'Sun elevation',t:'range',min:8,max:85,step:1,u:'°'}
+  ]}
+];
+
+let S=Object.assign({},DEFAULT);
+let G=null;
+let view={k:1,x:0,y:0,fit:true};
+let dirtyGeo=true,dirty3d=true,dirty2d=true,needCam=true,blocked=false,rafPending=false;
+let renderer=null,scene=null,camera=null,controls=null,group=null,sun=null,hemi=null;
+const cv2d=document.getElementById('cv2d');
+const stage2d=document.getElementById('stage2d');
+const stage3d=document.getElementById('stage3d');
+
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function escapeAttr(s){return escapeHtml(s);}
+
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+function confirmDialog(message,confirmLabel){
+  return new Promise(resolve=>{
+    const m=document.getElementById('modal');
+    document.getElementById('modalMsg').textContent=message;
+    const yes=document.getElementById('modalYes');
+    const no=document.getElementById('modalNo');
+    yes.textContent=confirmLabel||'OK';
+    m.hidden=false;
+    const done=v=>{m.hidden=true;yes.onclick=null;no.onclick=null;resolve(v);};
+    yes.onclick=()=>done(true);
+    no.onclick=()=>done(false);
+  });
+}
+
+function fmtImp(mm){
+  const prec=mm/25.4<24?16:8;
+  let u=Math.round(mm/25.4*prec);
+  const neg=u<0;
+  if(neg)u=-u;
+  const per=prec*12;
+  const ft=Math.floor(u/per);
+  const rem=u%per;
+  const whole=Math.floor(rem/prec);
+  let n=rem%prec,d=prec;
+  while(n&&n%2===0){n/=2;d/=2;}
+  let inch=String(whole);
+  if(n)inch=(whole?whole+' ':'')+n+'/'+d;
+  let out;
+  if(ft)out=ft+"'"+(rem?' '+inch+'"':'');
+  else out=inch+'"';
+  return (neg?'-':'')+out;
+}
+function fmtLen(mm){
+  return UNITS==='imperial'?fmtImp(mm):Math.round(mm).toLocaleString('en-US')+' mm';
+}
+function fmtLenS(mm){
+  return UNITS==='imperial'?fmtImp(mm):String(Math.round(mm));
+}
+function fmtTerms(terms,scale){
+  const list=UNITS==='imperial'?terms.map(t=>(t/2.54).toFixed(1)).join(' · ')+' in':terms.join(' · ')+' cm';
+  return list+' × '+scale.toFixed(3);
+}
+
+function mulberry32(a){
+  return function(){
+    a|=0;a=a+0x6D2B79F5|0;
+    let t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return((t^t>>>14)>>>0)/4294967296;
+  };
+}
+
+function toPath(pts){
+  const p=pts.map(q=>({X:Math.round(q[0]*SC),Y:Math.round(q[1]*SC)}));
+  if(!CL.Clipper.Orientation(p))p.reverse();
+  return p;
+}
+function boolOp(subj,clip,type){
+  const c=new CL.Clipper();
+  if(subj.length)c.AddPaths(subj,CL.PolyType.ptSubject,true);
+  if(clip.length)c.AddPaths(clip,CL.PolyType.ptClip,true);
+  const out=new CL.Paths();
+  c.Execute(type,out,CL.PolyFillType.pftNonZero,CL.PolyFillType.pftNonZero);
+  return out;
+}
+function boolTree(subj,clip,type){
+  const c=new CL.Clipper();
+  if(subj.length)c.AddPaths(subj,CL.PolyType.ptSubject,true);
+  if(clip.length)c.AddPaths(clip,CL.PolyType.ptClip,true);
+  const tree=new CL.PolyTree();
+  c.Execute(type,tree,CL.PolyFillType.pftNonZero,CL.PolyFillType.pftNonZero);
+  return tree;
+}
+function offsetPaths(paths,d){
+  if(!paths.length)return [];
+  if(d===0)return paths;
+  const co=new CL.ClipperOffset(2,10);
+  co.AddPaths(paths,CL.JoinType.jtRound,CL.EndType.etClosedPolygon);
+  const out=new CL.Paths();
+  co.Execute(out,d*SC);
+  return out;
+}
+function areaMM2(paths){
+  let a=0;
+  paths.forEach(p=>{a+=CL.Clipper.Area(p);});
+  return a/(SC*SC);
+}
+
+function arcPts(cx,cy,r,a0,a1){
+  const n=Math.max(4,Math.ceil(Math.abs(a1-a0)/0.07));
+  const o=[];
+  for(let i=0;i<=n;i++){
+    const a=a0+(a1-a0)*i/n;
+    o.push([cx+r*Math.cos(a),cy+r*Math.sin(a)]);
+  }
+  return o;
+}
+function circPts(cx,cy,r){
+  const rr=Math.max(r,1);
+  const n=Math.max(24,Math.min(120,Math.ceil(TAU/(2*Math.acos(Math.max(0,1-0.15/rr))||0.1))));
+  const o=[];
+  for(let i=0;i<n;i++){
+    const a=TAU*i/n;
+    o.push([cx+r*Math.cos(a),cy+r*Math.sin(a)]);
+  }
+  return o;
+}
+function cCirc(cx,cy,r){return {k:'c',cx,cy,r};}
+function cPt(x,y){return {k:'p',x,y};}
+function cLn(x0,y0,x1,y1){return {k:'l',x0,y0,x1,y1};}
+function shiftCons(cons,dx,dy){
+  return cons.map(c=>{
+    if(c.k==='c')return cCirc(c.cx+dx,c.cy+dy,c.r);
+    if(c.k==='p')return cPt(c.x+dx,c.y+dy);
+    return cLn(c.x0+dx,c.y0+dy,c.x1+dx,c.y1+dy);
+  });
+}
+function mirrorLeft(L){
+  return L.concat(L.slice(0,-1).map(p=>[-p[0],p[1]]).reverse());
+}
+function rightToFull(R){
+  const L=R.map(p=>[-p[0],p[1]]);
+  return mirrorLeft(L);
+}
+function normAngle(a){
+  while(a>Math.PI)a-=TAU;
+  while(a<=-Math.PI)a+=TAU;
+  return a;
+}
+function resample(pts,n){
+  const d=[0];
+  for(let i=1;i<pts.length;i++)d.push(d[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));
+  const tot=d[d.length-1];
+  const out=[];
+  let j=0;
+  for(let i=0;i<=n;i++){
+    const t=tot*i/n;
+    while(j<pts.length-2&&d[j+1]<t)j++;
+    const seg=d[j+1]-d[j]||1;
+    const u=Math.min(1,Math.max(0,(t-d[j])/seg));
+    out.push([pts[j][0]+(pts[j+1][0]-pts[j][0])*u,pts[j][1]+(pts[j+1][1]-pts[j][1])*u]);
+  }
+  return out;
+}
+
+function headRound(h){
+  return {pts:arcPts(0,0,h,Math.PI,0),cons:[cCirc(0,0,h),cPt(0,0),cLn(0,0,0,h)],rise:h,
+    info:{name:'Semicircular',radii:[h],centers:1,apex:null}};
+}
+function headSegmental(h,rise){
+  const r=Math.min(Math.max(rise,h*0.02),h*0.999);
+  const R=(h*h+r*r)/(2*r);
+  const cy=r-R;
+  const a0=Math.atan2(-cy,-h),a1=Math.atan2(-cy,h);
+  return {pts:arcPts(0,cy,R,a0,a1),cons:[cCirc(0,cy,R),cPt(0,cy),cLn(0,cy,-h,0),cLn(0,cy,h,0),cLn(0,cy,0,r)],rise:r,
+    info:{name:'Segmental',radii:[R],centers:1,apex:null}};
+}
+function headHorseshoe(h,k){
+  const kk=k;
+  const a=Math.atan2(kk,h);
+  const r=Math.hypot(h,kk);
+  return {pts:arcPts(0,kk,r,Math.PI+a,-a),cons:[cCirc(0,kk,r),cPt(0,kk),cLn(0,kk,-h,0),cLn(0,kk,h,0),cLn(0,kk,0,kk+r)],rise:kk+r,
+    info:{name:'Horseshoe',radii:[r],centers:1,apex:null,extra:'arc sweep '+Math.round((Math.PI+2*a)*180/Math.PI)+'°'}};
+}
+function pointedName(rho){
+  if(rho<0.505)return 'Semicircular';
+  if(rho<0.97)return 'Drop (obtuse) arch';
+  if(rho<=1.03)return 'Equilateral arch';
+  return 'Lancet (acute) arch';
+}
+function headPointed(h,rho){
+  const rr=Math.max(rho,0.5);
+  const R=rr*2*h;
+  const ya=Math.sqrt(Math.max(0,2*R*h-h*h));
+  const ta=Math.atan2(ya,h-R);
+  const cxL=-h+R;
+  const Lpts=arcPts(cxL,0,R,Math.PI,ta);
+  return {pts:mirrorLeft(Lpts),
+    cons:[cCirc(cxL,0,R),cCirc(-cxL,0,R),cPt(cxL,0),cPt(-cxL,0),cLn(cxL,0,0,ya),cLn(-cxL,0,0,ya),cLn(cxL,0,-h,0),cLn(-cxL,0,h,0)],
+    rise:ya,
+    info:{name:pointedName(rr),radii:[R,R],centers:rr<=0.505?1:2,apex:rr<=0.505?180:(2*Math.PI-2*ta)*180/Math.PI}};
+}
+function headTudor(h,span,S){
+  const r1=S.r1*span,phi=S.phi*Math.PI/180,rise=Math.min(Math.max(S.rise*span,span*0.03),span*2);
+  const Px=h-r1,Py=0;
+  const Dx=-Px,Dy=rise;
+  const ux=Math.cos(phi),uy=Math.sin(phi);
+  const den=2*(Dx*ux+Dy*uy-r1);
+  const t=(r1*r1-(Dx*Dx+Dy*Dy))/den;
+  if(!isFinite(t)||t<=0)return null;
+  const r2=t+r1;
+  const Cx=Px-t*ux,Cy=Py-t*uy;
+  const a1=Math.atan2(rise-Cy,0-Cx);
+  if(!(a1>phi+0.01))return null;
+  const small=arcPts(Px,Py,r1,0,phi);
+  const large=arcPts(Cx,Cy,r2,phi,a1);
+  const R=small.concat(large.slice(1));
+  const jx=Px+r1*ux,jy=Py+r1*uy;
+  return {pts:rightToFull(R),
+    cons:[cCirc(Px,0,r1),cCirc(-Px,0,r1),cCirc(Cx,Cy,r2),cCirc(-Cx,Cy,r2),cPt(Px,0),cPt(-Px,0),cPt(Cx,Cy),cPt(-Cx,Cy),cLn(Cx,Cy,jx,jy),cLn(-Cx,Cy,-jx,jy),cLn(Cx,Cy,0,rise),cLn(-Cx,Cy,0,rise)],
+    rise,
+    info:{name:'Four-centred (Tudor)',radii:[r1,r2],centers:4,apex:null}};
+}
+function headOgee(h,span,S){
+  const r1=S.r1*span,phi=S.phi*Math.PI/180,rise=Math.min(Math.max(S.rise*span,span*0.1),span*2);
+  const Px=h-r1;
+  const Dx=-Px,Dy=rise;
+  const ux=Math.cos(phi),uy=Math.sin(phi);
+  const den=2*(r1-(Dx*ux+Dy*uy));
+  const s=(r1*r1-(Dx*Dx+Dy*Dy))/den;
+  if(!isFinite(s)||s<=r1*1.0001)return null;
+  const r2=s-r1;
+  const Cx=Px+s*ux,Cy=s*uy;
+  const a0=phi+Math.PI;
+  const a1=a0+normAngle(Math.atan2(rise-Cy,0-Cx)-a0);
+  if(Math.abs(a1-a0)<0.03||Math.abs(a1-a0)>3)return null;
+  const convex=arcPts(Px,0,r1,0,phi);
+  const concave=arcPts(Cx,Cy,r2,a0,a1);
+  const R=convex.concat(concave.slice(1));
+  const jx=Px+r1*ux,jy=r1*uy;
+  return {pts:rightToFull(R),
+    cons:[cCirc(Px,0,r1),cCirc(-Px,0,r1),cCirc(Cx,Cy,r2),cCirc(-Cx,Cy,r2),cPt(Px,0),cPt(-Px,0),cPt(Cx,Cy),cPt(-Cx,Cy),cLn(Px,0,Cx,Cy),cLn(-Px,0,-Cx,Cy),cLn(Cx,Cy,0,rise),cLn(-Cx,Cy,0,rise)],
+    rise,
+    info:{name:'Ogee',radii:[r1,r2],centers:4,apex:null}};
+}
+function headMultifoil(h,rho,N,bulge){
+  const base=headPointed(h,rho);
+  const P=resample(base.pts,N);
+  const pts=[];
+  const cons=[];
+  for(let i=0;i<N;i++){
+    const p0=P[i],p1=P[i+1];
+    const dx=p1[0]-p0[0],dy=p1[1]-p0[1];
+    const len=Math.hypot(dx,dy)||1;
+    const c=len/2;
+    const sag=bulge*c;
+    const r=(c*c+sag*sag)/(2*sag);
+    const nx=-dy/len,ny=dx/len;
+    const mx=(p0[0]+p1[0])/2,my=(p0[1]+p1[1])/2;
+    const cx=mx-(r-sag)*nx,cy=my-(r-sag)*ny;
+    const a0=Math.atan2(p0[1]-cy,p0[0]-cx);
+    const a1=Math.atan2(p1[1]-cy,p1[0]-cx);
+    let d=a1-a0;
+    while(d>0)d-=TAU;
+    while(d<-TAU)d+=TAU;
+    const arc=arcPts(cx,cy,r,a0,a0+d);
+    arc.forEach((q,j)=>{if(i===0||j>0)pts.push(q);});
+    cons.push(cCirc(cx,cy,r),cPt(cx,cy));
+  }
+  let rise=0;
+  pts.forEach(p=>{if(p[1]>rise)rise=p[1];});
+  return {pts,cons:cons.concat(base.pts.map((p,i)=>i%6===0?cPt(p[0],p[1]):null).filter(Boolean)),rise,
+    info:{name:N===3?'Trefoil arch':'Multifoil arch ('+N+' lobes)',radii:[],centers:N,apex:null}};
+}
+function headEllipse(h,rise){
+  const pts=[];
+  for(let i=0;i<=64;i++){const t=Math.PI-Math.PI*i/64;pts.push([h*Math.cos(t),rise*Math.sin(t)]);}
+  return {pts,cons:[cLn(0,0,0,rise),cLn(-h,0,h,0)],rise,info:{name:'Semi-ellipse',radii:[],centers:0,apex:null,extra:'semi-axes '+fmtLen(h)+' × '+fmtLen(rise)}};
+}
+function headParabola(h,rise){
+  const pts=[];
+  for(let i=0;i<=64;i++){const x=-h+2*h*i/64;pts.push([x,rise*(1-(x*x)/(h*h))]);}
+  return {pts,cons:[cLn(0,0,0,rise)],rise,info:{name:'Parabolic',radii:[],centers:0,apex:null}};
+}
+function headCatenary(h,rise){
+  let lo=h/700,hi=1e7;
+  for(let i=0;i<90;i++){
+    const mid=Math.sqrt(lo*hi);
+    const f=mid*(Math.cosh(h/mid)-1);
+    if(f>rise)lo=mid;else hi=mid;
+  }
+  const a=Math.sqrt(lo*hi);
+  const pts=[];
+  for(let i=0;i<=64;i++){const x=-h+2*h*i/64;pts.push([x,rise-a*(Math.cosh(x/a)-1)]);}
+  return {pts,cons:[cLn(0,0,0,rise)],rise,info:{name:'Catenary',radii:[],centers:0,apex:null,extra:'chain parameter a = '+fmtLen(a)}};
+}
+function headFlat(h){
+  return {pts:[[-h,0],[h,0]],cons:[],rise:0,info:{name:'Flat lintel',radii:[],centers:0,apex:null}};
+}
+
+function makeHead(S,h,span){
+  switch(S.arch){
+    case 'round':return headRound(h);
+    case 'segmental':return headSegmental(h,S.rise*span);
+    case 'horseshoe':return headHorseshoe(h,S.stilt*h);
+    case 'pointed':return headPointed(h,S.rho);
+    case 'tudor':return headTudor(h,span,S);
+    case 'ogee':return headOgee(h,span,S);
+    case 'multifoil':return headMultifoil(h,S.rho,Math.round(S.lobes),S.bulge);
+    case 'ellipse':return headEllipse(h,Math.max(S.rise*span,span*0.03));
+    case 'parabola':return headParabola(h,Math.max(S.rise*span,span*0.03));
+    case 'catenary':return headCatenary(h,Math.max(S.rise*span,span*0.03));
+    case 'flat':return headFlat(h);
+    default:return headPointed(h,1);
+  }
+}
+
+function buildOpening(S){
+  const span=S.span,h=span/2;
+  if(S.arch==='circle'){
+    const pts=circPts(0,h,h);
+    return {h,Ht:span,ys:h,rise:h,O:[toPath(pts)],pts,cons:[cCirc(0,h,h),cPt(0,h),cLn(-h,h,h,h),cLn(0,0,0,span)],
+      info:{name:'Circular',radii:[h],centers:1,apex:null},circle:{x:0,y:h,r:h},warn:null};
+  }
+  let warn=null;
+  let head=makeHead(S,h,span);
+  if(!head){
+    head=headPointed(h,1);
+    warn='Parameters out of range for this head — showing an equilateral arch instead.';
+  }
+  let ys=S.arch==='flat'?S.height:S.height-head.rise;
+  const minYs=span*0.05;
+  if(ys<minYs){
+    ys=minYs;
+    warn='Height is too low for this head — raised to fit.';
+  }
+  const Ht=ys+head.rise;
+  const hp=head.pts.map(p=>[p[0],p[1]+ys]);
+  const poly=[[-h,0]].concat(hp).concat([[h,0]]);
+  const cons=shiftCons(head.cons,0,ys);
+  cons.push(cLn(-h,ys,h,ys));
+  return {h,Ht,ys,rise:head.rise,O:[toPath(poly)],pts:poly,cons,info:head.info,circle:null,warn};
+}
+
+function isMod(sch){return sch==='modBlue'||sch==='modRed';}
+function weights(n,sch){
+  const w=[];
+  for(let i=0;i<n;i++){
+    if(sch==='golden')w.push(Math.pow(PHI,i));
+    else if(sch==='fibonacci')w.push(FIB[Math.min(i,FIB.length-1)]);
+    else w.push(1);
+  }
+  return w;
+}
+function modTerms(n,series,L,mirror){
+  const T=series==='red'?RED:BLUE;
+  const mir=!!mirror&&n>1;
+  const k=mir?Math.ceil(n/2):n;
+  const build=a=>mir?(n%2===0?a.concat(a.slice().reverse()):a.concat(a.slice(0,k-1).reverse())):a;
+  let best=null;
+  for(let i=0;i+k<=T.length;i++){
+    const t=build(T.slice(i,i+k));
+    const sum=t.reduce((a,b)=>a+b,0)*10;
+    const err=Math.abs(sum-L)/L;
+    if(!best||err<best.err)best={terms:t,err,sum,start:i};
+  }
+  if(!best){
+    const t=build(T.slice(Math.max(0,T.length-k)));
+    best={terms:t,err:1,sum:t.reduce((a,b)=>a+b,0)*10,start:0};
+  }
+  best.scale=L/best.sum;
+  return best;
+}
+function division(n,sch,sym,L){
+  let w;
+  if(isMod(sch))w=modTerms(n,sch==='modRed'?'red':'blue',L||1000,sym).terms;
+  else if(sym&&n>1){
+    const half=Math.ceil(n/2);
+    const w0=weights(half,sch);
+    w=n%2===0?w0.concat(w0.slice().reverse()):w0.concat(w0.slice(0,half-1).reverse());
+  }else w=weights(n,sch);
+  const tot=w.reduce((a,b)=>a+b,0);
+  const b=[0];
+  w.forEach(x=>b.push(b[b.length-1]+x/tot));
+  return b;
+}
+
+function foilPaths(cx,cy,R,n){
+  const s=Math.sin(Math.PI/n);
+  let rf=R*s/(1+s)*(1+FOIL_OV);
+  rf=Math.min(rf,R*0.92);
+  const d=R-rf;
+  const polys=[];
+  const cs=[];
+  for(let k=0;k<n;k++){
+    const a=Math.PI/2+TAU*k/n;
+    const px=cx+d*Math.cos(a),py=cy+d*Math.sin(a);
+    cs.push([px,py]);
+    polys.push(toPath(circPts(px,py,rf)));
+  }
+  polys.push(toPath(cs));
+  return boolOp(polys,[],CL.ClipType.ctUnion);
+}
+function circleCell(cx,cy,r,foilN){
+  if(foilN>=3)return foilPaths(cx,cy,r,foilN);
+  return [toPath(circPts(cx,cy,r))];
+}
+
+function pack(F,K,minR){
+  const E=[];
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  F.forEach(p=>{
+    for(let i=0;i<p.length;i++){
+      const a=p[i],b=p[(i+1)%p.length];
+      const ax=a.X/SC,ay=a.Y/SC,bx=b.X/SC,by=b.Y/SC;
+      E.push(ax,ay,bx,by);
+      if(ax<x0)x0=ax;if(ax>x1)x1=ax;if(ay<y0)y0=ay;if(ay>y1)y1=ay;
+    }
+  });
+  const out=[];
+  if(!E.length||K<=0)return out;
+  const ne=E.length/4;
+  function inside(x,y){
+    let c=false;
+    for(let i=0;i<ne;i++){
+      const j=i*4;
+      const ay=E[j+1],by=E[j+3];
+      if((ay>y)!==(by>y)){
+        const ax=E[j],bx=E[j+2];
+        if(x<ax+(y-ay)*(bx-ax)/(by-ay))c=!c;
+      }
+    }
+    return c;
+  }
+  function dEdge(x,y){
+    let m=1e18;
+    for(let i=0;i<ne;i++){
+      const j=i*4;
+      const ax=E[j],ay=E[j+1],dx=E[j+2]-ax,dy=E[j+3]-ay;
+      const l2=dx*dx+dy*dy;
+      let t=l2?((x-ax)*dx+(y-ay)*dy)/l2:0;
+      t=t<0?0:t>1?1:t;
+      const ex=ax+t*dx-x,ey=ay+t*dy-y;
+      const d=ex*ex+ey*ey;
+      if(d<m)m=d;
+    }
+    return Math.sqrt(m);
+  }
+  function dist(x,y){
+    if(!inside(x,y))return -1;
+    let d=dEdge(x,y);
+    for(let i=0;i<out.length;i++){
+      const e=Math.hypot(x-out[i].x,y-out[i].y)-out[i].r;
+      if(e<d)d=e;
+    }
+    return d;
+  }
+  const step=Math.max(8,Math.max(x1-x0,y1-y0)/90);
+  const m=Math.max(Math.abs(x0),Math.abs(x1));
+  const nx=2*Math.floor(m/step)+1;
+  const ny=Math.floor((y1-y0)/step)+1;
+  const gx=new Float32Array(nx*ny),gy=new Float32Array(nx*ny),gd=new Float32Array(nx*ny);
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){
+    const id=j*nx+i;
+    const x=(i-(nx-1)/2)*step,y=y0+j*step;
+    gx[id]=x;gy[id]=y;
+    gd[id]=inside(x,y)?dEdge(x,y):-1;
+  }
+  for(let k=0;k<K;k++){
+    let bi=-1,bv=minR;
+    for(let id=0;id<gd.length;id++){
+      if(gd[id]>bv){bv=gd[id];bi=id;}
+    }
+    if(bi<0)break;
+    let bx=gx[bi],by=gy[bi],bd=dist(bx,by);
+    let st=step*0.5;
+    for(let it=0;it<60&&st>0.15;it++){
+      let imp=false;
+      for(let a=0;a<8;a++){
+        const cx=bx+st*Math.cos(a*Math.PI/4),cy=by+st*Math.sin(a*Math.PI/4);
+        const d=dist(cx,cy);
+        if(d>bd+1e-6){bd=d;bx=cx;by=cy;imp=true;}
+      }
+      if(!imp)st*=0.6;
+    }
+    if(bd<minR)break;
+    out.push({x:bx,y:by,r:bd});
+    for(let id=0;id<gd.length;id++){
+      if(gd[id]>=0){
+        const e=Math.hypot(gx[id]-bx,gy[id]-by)-bd;
+        if(e<gd[id])gd[id]=e;
+      }
+    }
+  }
+  return out;
+}
+
+function rectPath(x0,y0,x1,y1){
+  return toPath([[x0,y0],[x1,y0],[x1,y1],[x0,y1]]);
+}
+
+function cellsMullions(S,op){
+  const b=division(Math.round(S.lights),S.scheme,S.sym,op.h*2);
+  const cells=[];
+  const cons=[];
+  for(let i=0;i<b.length-1;i++){
+    const xa=-op.h+2*op.h*b[i],xb=-op.h+2*op.h*b[i+1];
+    cells.push(boolOp(op.O,[rectPath(xa,-100,xb,op.Ht+100)],CL.ClipType.ctIntersection));
+    if(i>0)cons.push(cLn(xa,0,xa,op.Ht));
+  }
+  return {cells,cons,notes:[]};
+}
+
+function subHead(hs,S){
+  if(S.subFoils>=3)return headMultifoil(hs,S.subRho,Math.round(S.subFoils),S.subBulge);
+  return headPointed(hs,S.subRho);
+}
+
+function cellsGeometric(S,op,hw,fi){
+  const n=Math.round(S.lights);
+  const b=division(n,S.scheme,S.sym,op.h*2);
+  const cells=[];
+  let cons=[];
+  const ysub=op.ys*S.subSpring;
+  for(let i=0;i<n;i++){
+    const xa=-op.h+2*op.h*b[i],xb=-op.h+2*op.h*b[i+1];
+    const hs=(xb-xa)/2,cx=(xa+xb)/2;
+    const head=subHead(hs,S);
+    const poly=[[cx-hs,0]].concat(head.pts.map(p=>[p[0]+cx,p[1]+ysub])).concat([[cx+hs,0]]);
+    cells.push(boolOp([toPath(poly)],[rectPath(xa,-100,xb,op.Ht+100)],CL.ClipType.ctIntersection));
+    cons=cons.concat(shiftCons(head.cons,cx,ysub));
+    cons.push(cLn(cx-hs,ysub,cx+hs,ysub));
+  }
+  const notes=[];
+  if(S.circles>0){
+    const free=boolOp(offsetPaths(op.O,-fi),[].concat.apply([],cells),CL.ClipType.ctDifference);
+    const cs=pack(free,Math.round(S.circles),S.minR);
+    const fn=S.foilN>=3?Math.round(S.foilN):0;
+    cs.forEach(c=>{
+      cells.push(circleCell(c.x,c.y,c.r,fn));
+      cons.push(cCirc(c.x,c.y,c.r),cPt(c.x,c.y));
+    });
+    if(cs.length)notes.push(['Packed circles',cs.length+' · r '+cs.slice(0,3).map(c=>(c.r/S.span).toFixed(3)).join(', ')+' × span']);
+  }
+  return {cells,cons,notes};
+}
+
+function cellsRose(S,op,hw,fi){
+  const inset=offsetPaths(op.O,-fi);
+  let C;
+  if(op.circle)C={x:0,y:op.circle.y,r:op.circle.r-fi};
+  else{
+    const c=pack(inset,1,10)[0];
+    C=c||{x:0,y:op.Ht/2,r:op.h*0.5};
+  }
+  const n=Math.round(S.petals);
+  const cells=[];
+  const cons=[cCirc(C.x,C.y,C.r),cPt(C.x,C.y)];
+  const notes=[];
+  if(S.roseStyle==='wheel'){
+    const r0=C.r*0.2;
+    for(let k=0;k<n;k++){
+      const a0=Math.PI/2+TAU*k/n,a1=Math.PI/2+TAU*(k+1)/n;
+      const inner=arcPts(C.x,C.y,r0,a0,a1);
+      const outer=arcPts(C.x,C.y,C.r,a1,a0);
+      cells.push([toPath(inner.concat(outer))]);
+      cons.push(cLn(C.x+r0*Math.cos(a0),C.y+r0*Math.sin(a0),C.x+C.r*Math.cos(a0),C.y+C.r*Math.sin(a0)));
+    }
+    cons.push(cCirc(C.x,C.y,r0));
+    notes.push(['Hub radius','0.20 × rose radius']);
+    return {cells,cons,notes};
+  }
+  const fn=S.foilN>=3?Math.round(S.foilN):0;
+  const sp=Math.sin(Math.PI/n);
+  const rp=C.r*sp/(1+sp);
+  const d=C.r-rp;
+  const rh=d-rp;
+  for(let k=0;k<n;k++){
+    const a=Math.PI/2+TAU*k/n;
+    const px=C.x+d*Math.cos(a),py=C.y+d*Math.sin(a);
+    cells.push(circleCell(px,py,rp,fn));
+    cons.push(cCirc(px,py,rp),cPt(px,py));
+  }
+  if(rh>8){
+    cells.push(circleCell(C.x,C.y,rh,fn));
+    cons.push(cCirc(C.x,C.y,rh));
+  }
+  notes.push(['Petal radius','r = R·sin(π/n) ÷ (1+sin(π/n)) = '+(rp/C.r).toFixed(3)+' R']);
+  if(S.circles>0){
+    const free=boolOp(inset,[].concat.apply([],cells),CL.ClipType.ctDifference);
+    const cs=pack(free,Math.round(S.circles),S.minR);
+    cs.forEach(c=>{
+      cells.push(circleCell(c.x,c.y,c.r,fn));
+      cons.push(cCirc(c.x,c.y,c.r),cPt(c.x,c.y));
+    });
+    if(cs.length)notes.push(['Packed circles',String(cs.length)]);
+  }
+  return {cells,cons,notes};
+}
+
+function cellsGrid(S,op){
+  const cols=Math.round(S.cols),rows=Math.round(S.rows);
+  const bx=division(cols,S.scheme,S.sym,op.h*2),by=division(rows,S.rowScheme,S.sym,op.Ht);
+  const rng=mulberry32(Math.round(S.seed)*7919);
+  const p1=rng()*TAU,p2=rng()*TAU,p3=rng()*TAU,p4=rng()*TAU;
+  const crng=mulberry32(Math.round(S.seed)*613+29);
+  const pool=[0,0,0,0,1,2,3];
+  const A=S.warp,L=S.warpLen;
+  function warp(x,y){
+    if(A<=0)return [x,y];
+    const dx=A*(0.7*Math.sin(TAU*y/L+p1)+0.3*Math.sin(TAU*y/(L*0.43)+p2));
+    const dy=A*0.6*(0.7*Math.sin(TAU*x/(L*0.8)+p3)+0.3*Math.sin(TAU*x/(L*0.37)+p4));
+    return [x+dx,y+dy];
+  }
+  const X=bx.map(t=>-op.h+2*op.h*t),Y=by.map(t=>op.Ht*t);
+  const sub=A>0?14:1;
+  const cells=[],colors=[];
+  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
+    const x0=X[i],x1=X[i+1],y0=Y[j],y1=Y[j+1];
+    const pts=[];
+    for(let q=0;q<sub;q++)pts.push(warp(x0+(x1-x0)*q/sub,y0));
+    for(let q=0;q<sub;q++)pts.push(warp(x1,y0+(y1-y0)*q/sub));
+    for(let q=0;q<sub;q++)pts.push(warp(x1-(x1-x0)*q/sub,y1));
+    for(let q=0;q<sub;q++)pts.push(warp(x0,y1-(y1-y0)*q/sub));
+    const cell=boolOp([toPath(pts)],op.O,CL.ClipType.ctIntersection);
+    if(cell.length){cells.push(cell);colors.push(CORB_PAL[pool[Math.floor(crng()*pool.length)]]);}
+  }
+  const notes=[['Grid',cols+' × '+rows]];
+  if(isMod(S.scheme)){
+    const t=modTerms(cols,S.scheme==='modRed'?'red':'blue',op.h*2,S.sym);
+    notes.push(['Columns',fmtTerms(t.terms,t.scale)]);
+  }
+  if(isMod(S.rowScheme)){
+    const t=modTerms(rows,S.rowScheme==='modRed'?'red':'blue',op.Ht,S.sym);
+    notes.push(['Rows',fmtTerms(t.terms,t.scale)]);
+  }
+  return {cells,cons:[],notes,colors:S.polychrome?colors:null};
+}
+
+function mondrianBuild(W,H,seed,splits){
+  const rng=mulberry32(Math.round(seed)*104729+17);
+  const minD=Math.min(W,H)*0.09;
+  const RAT=[1/4,1/3,2/5,3/5,2/3,3/4];
+  const rects=[{x0:0,y0:0,x1:W,y1:H}];
+  const segs=[];
+  for(let n=0;n<splits;n++){
+    const cand=[];
+    rects.forEach((r,i)=>{
+      const w=r.x1-r.x0,h=r.y1-r.y0;
+      if(w>=minD*2.2||h>=minD*2.2)cand.push({i,w,h});
+    });
+    if(!cand.length)break;
+    const wts=cand.map(c=>Math.pow(c.w*c.h,1.5));
+    const tot=wts.reduce((a,b)=>a+b,0);
+    let t=rng()*tot,pick=cand[0];
+    for(let j=0;j<cand.length;j++){t-=wts[j];if(t<=0){pick=cand[j];break;}}
+    const r=rects[pick.i];
+    let vert;
+    if(pick.w<minD*2.2)vert=false;
+    else if(pick.h<minD*2.2)vert=true;
+    else if(pick.w/pick.h>1.25)vert=true;
+    else if(pick.h/pick.w>1.25)vert=false;
+    else vert=rng()<0.5;
+    for(let tries=0;tries<8;tries++){
+      const f=RAT[Math.floor(rng()*RAT.length)];
+      if(vert){
+        const x=r.x0+(r.x1-r.x0)*f;
+        if(x-r.x0<minD||r.x1-x<minD)continue;
+        segs.push({o:'v',pos:x,a:r.y0,b:r.y1});
+        rects.splice(pick.i,1,{x0:r.x0,y0:r.y0,x1:x,y1:r.y1},{x0:x,y0:r.y0,x1:r.x1,y1:r.y1});
+      }else{
+        const y=r.y0+(r.y1-r.y0)*f;
+        if(y-r.y0<minD||r.y1-y<minD)continue;
+        segs.push({o:'h',pos:y,a:r.x0,b:r.x1});
+        rects.splice(pick.i,1,{x0:r.x0,y0:r.y0,x1:r.x1,y1:y},{x0:r.x0,y0:y,x1:r.x1,y1:r.y1});
+      }
+      break;
+    }
+  }
+  const order=rects.map((r,i)=>({i,a:(r.x1-r.x0)*(r.y1-r.y0)})).sort((p,q)=>p.a-q.a).map(o=>o.i);
+  const col=rects.map(()=> 'W');
+  const used=new Set();
+  const cnt=order.length;
+  function take(lo,hi,key){
+    const a=Math.floor(cnt*lo),b=Math.max(a+1,Math.floor(cnt*hi));
+    let pool=order.slice(a,b).filter(i=>!used.has(i));
+    if(!pool.length)pool=order.filter(i=>!used.has(i));
+    if(!pool.length)return;
+    const i=pool[Math.floor(rng()*pool.length)];
+    used.add(i);
+    col[i]=key;
+  }
+  if(cnt>=3){take(0.5,0.95,'R');take(0.1,0.6,'B');take(0,0.5,'Y');}
+  if(cnt>=8&&rng()<0.6)take(0,0.35,'K');
+  return {rects:rects.map((r,i)=>Object.assign({color:col[i]},r)),segs};
+}
+
+function cellsMondrian(S,op){
+  const m=mondrianBuild(op.h*2,op.Ht,S.mondSeed,Math.round(S.mondSplits));
+  const cells=[],colors=[];
+  m.rects.forEach(r=>{
+    const cell=boolOp(op.O,[rectPath(r.x0-op.h,r.y0,r.x1-op.h,r.y1)],CL.ClipType.ctIntersection);
+    if(cell.length){cells.push(cell);colors.push(MOND_PAL[r.color]);}
+  });
+  return {cells,cons:[],notes:[['Composition',m.rects.length+' fields · seed '+Math.round(S.mondSeed)]],colors,barColor:MOND_PAL.K};
+}
+
+function lightColor(sh,cells,colors){
+  const c=sh.outer;
+  let a=0,cx=0,cy=0;
+  for(let i=0;i<c.length;i++){
+    const p=c[i],q=c[(i+1)%c.length];
+    const cr=p.X*q.Y-q.X*p.Y;
+    a+=cr;cx+=(p.X+q.X)*cr;cy+=(p.Y+q.Y)*cr;
+  }
+  const tries=[];
+  if(Math.abs(a)>1)tries.push({X:Math.round(cx/(3*a)),Y:Math.round(cy/(3*a))});
+  tries.push({X:c[0].X,Y:c[0].Y});
+  for(let t=0;t<tries.length;t++){
+    for(let i=0;i<cells.length;i++)for(let j=0;j<cells[i].length;j++){
+      if(CL.Clipper.PointInPolygon(tries[t],cells[i][j])!==0)return colors[i];
+    }
+  }
+  return null;
+}
+
+function cellsLattice(S,op){
+  let p=S.pitch;
+  const W=op.h*2;
+  while((W*op.Ht)/(p*p)>420)p*=1.1;
+  const cx0=0,cy0=op.Ht/2;
+  const rot=S.rot*Math.PI/180,cs=Math.cos(rot),sn=Math.sin(rot);
+  const R=Math.hypot(op.h,op.Ht/2)+p*2;
+  const N=Math.ceil(R/p)+2;
+  const raw=[];
+  const sqrt2=Math.SQRT2;
+  const n=Math.round(S.starPts);
+  function ngon(cx,cy,r,k,a0){
+    const o=[];
+    for(let i=0;i<k;i++){const a=a0+TAU*i/k;o.push([cx+r*Math.cos(a),cy+r*Math.sin(a)]);}
+    return o;
+  }
+  function starShape(cx,cy,ro,ri,k){
+    const o=[];
+    for(let i=0;i<k*2;i++){
+      const a=Math.PI/2+Math.PI*i/k;
+      const r=i%2===0?ro:ri;
+      o.push([cx+r*Math.cos(a),cy+r*Math.sin(a)]);
+    }
+    return o;
+  }
+  const hexR=p/Math.sqrt(3);
+  for(let j=-N;j<=N;j++)for(let i=-N;i<=N;i++){
+    if(S.latCell==='square'){
+      const x=i*p,y=j*p;
+      raw.push([[x-p/2,y-p/2],[x+p/2,y-p/2],[x+p/2,y+p/2],[x-p/2,y+p/2]]);
+    }else if(S.latCell==='hexagon'){
+      const x=i*p+(((j%2)+2)%2?p/2:0),y=j*1.5*hexR;
+      raw.push(ngon(x,y,hexR,6,Math.PI/2));
+    }else if(S.latCell==='octagon'){
+      const x=i*p,y=j*p;
+      raw.push(ngon(x,y,p/(2*Math.cos(Math.PI/8)),8,Math.PI/8));
+      const a=p/(1+sqrt2);
+      raw.push(ngon(x+p/2,y+p/2,a/sqrt2,4,0));
+    }else{
+      const x=i*p,y=j*p;
+      const ro=p/2*(n%4===0?1:0.96);
+      raw.push(starShape(x,y,ro,ro*S.starDepth,n));
+      if(S.dual)raw.push(ngon(x+p/2,y+p/2,p*0.26,4,0));
+    }
+  }
+  const cells=[];
+  raw.forEach(poly=>{
+    const t=poly.map(q=>[cx0+q[0]*cs-q[1]*sn,cy0+q[0]*sn+q[1]*cs]);
+    let mx=0,my=0;
+    t.forEach(q=>{mx+=q[0];my+=q[1];});
+    mx/=t.length;my/=t.length;
+    if(Math.abs(mx)>op.h+p*0.6||my<-p*0.6||my>op.Ht+p*0.6)return;
+    const cell=boolOp([toPath(t)],op.O,CL.ClipType.ctIntersection);
+    if(cell.length)cells.push(cell);
+  });
+  return {cells,cons:[],notes:[['Lattice pitch',fmtLen(p)],['Cells',String(cells.length)]]};
+}
+
+function treeShapes(tree){
+  const out=[];
+  function go(n){
+    out.push({outer:n.Contour(),holes:n.Childs().map(h=>h.Contour())});
+    n.Childs().forEach(h=>h.Childs().forEach(go));
+  }
+  tree.Childs().forEach(go);
+  return out;
+}
+
+function compute(S){
+  const op=buildOpening(S);
+  const hw=S.bar/2;
+  const fEff=Math.max(S.frame,hw);
+  const fi=fEff-hw;
+  let r;
+  switch(S.pattern){
+    case 'mullions':r=cellsMullions(S,op);break;
+    case 'geometric':r=cellsGeometric(S,op,hw,fi);break;
+    case 'rose':r=cellsRose(S,op,hw,fi);break;
+    case 'grid':r=cellsGrid(S,op);break;
+    case 'mondrian':r=cellsMondrian(S,op);break;
+    case 'lattice':r=cellsLattice(S,op);break;
+    default:r={cells:[op.O],cons:[],notes:[]};
+  }
+  const lightsRaw=[];
+  r.cells.forEach(cp=>{
+    offsetPaths(cp,-hw).forEach(p=>lightsRaw.push(p));
+  });
+  const insetO=offsetPaths(op.O,-fEff);
+  let lights=boolOp(lightsRaw,insetO,CL.ClipType.ctIntersection);
+  const minA=hw*hw;
+  lights=lights.filter(p=>{
+    const a=CL.Clipper.Area(p)/(SC*SC);
+    return a<0||a>minA;
+  });
+  const m=S.margin;
+  const rect={x0:-op.h-m,y0:-m,x1:op.h+m,y1:op.Ht+m};
+  if(S.arch==='horseshoe'){
+    let ext=op.h;
+    op.pts.forEach(p=>{if(Math.abs(p[0])>ext)ext=Math.abs(p[0]);});
+    rect.x0=-ext-m;rect.x1=ext+m;
+  }
+  const rectP=rectPath(rect.x0,rect.y0,rect.x1,rect.y1);
+  const tracery=boolOp(op.O,lights,CL.ClipType.ctDifference);
+  const surround=boolOp([rectP],op.O,CL.ClipType.ctDifference);
+  const lightTree=boolTree(lights,[],CL.ClipType.ctUnion);
+  const lightShapes=treeShapes(lightTree);
+  const lightColors=r.colors?lightShapes.map(sh=>lightColor(sh,r.cells,r.colors)):null;
+  const aO=areaMM2(op.O),aL=areaMM2(lights);
+  return {op,lights,lightShapes,lightColors,barColor:r.barColor||null,tracery,surround,rect,cons:op.cons.concat(r.cons),notes:r.notes,
+    glaze:aO>0?aL/aO:0,nLights:lightShapes.length,hw,fEff,tracTree:boolTree(op.O,lights,CL.ClipType.ctDifference),surTree:boolTree([rectP],op.O,CL.ClipType.ctDifference),
+    Ht:op.Ht,warn:op.warn||(lightShapes.length?null:'No lights remain — bars are wider than the cells. Reduce bar width or enlarge the pattern.')};
+}
+
+function analysisHtml(){
+  const op=G.op,span=S.span;
+  const rows=[];
+  const kv=(a,b,cls)=>rows.push(`<div class="kv${cls?' '+cls:''}"><span>${escapeHtml(a)}</span><span>${escapeHtml(b)}</span></div>`);
+  kv('Head',op.info.name);
+  kv('Span',fmtLen(span));
+  if(S.arch!=='circle'){
+    kv('Rise',fmtLen(op.rise));
+    kv('Rise ÷ span',(op.rise/span).toFixed(3));
+    kv('Springing height',fmtLen(op.ys));
+    kv('Total height',fmtLen(op.Ht));
+  }
+  if(op.info.centers)kv('Centres',String(op.info.centers));
+  if(op.info.radii&&op.info.radii.length){
+    const u=Array.from(new Set(op.info.radii.map(r=>(r/span).toFixed(3))));
+    kv('Radii ÷ span',u.join(' · '));
+  }
+  if(op.info.apex)kv('Apex angle',op.info.apex.toFixed(1)+'°');
+  if(op.info.extra)kv('Detail',op.info.extra);
+  kv('Lights',String(G.nLights));
+  kv('Glazing ratio',(G.glaze*100).toFixed(1)+'%');
+  kv('Bar · frame',fmtLen(S.bar)+' · '+fmtLen(G.fEff));
+  G.notes.forEach(n=>kv(n[0],n[1]));
+  if(G.warn)kv('Notice',G.warn,'warn');
+  let html=rows.join('');
+  html+=`<div class="note">${escapeHtml(ARCH_NOTES[S.arch]||'')}</div>`;
+  return html;
+}
+
+function tracePaths(x,paths){
+  paths.forEach(p=>{
+    if(!p.length)return;
+    x.moveTo(p[0].X/SC,p[0].Y/SC);
+    for(let i=1;i<p.length;i++)x.lineTo(p[i].X/SC,p[i].Y/SC);
+    x.closePath();
+  });
+}
+
+function fitView(w,h){
+  const rw=G.rect.x1-G.rect.x0+260,rh=G.rect.y1-G.rect.y0+420;
+  view.k=Math.min(w*0.92/rw,h*0.9/rh);
+  view.x=0;view.y=0;
+}
+
+const STAIN=['#c0392b','#2e6bb5','#c9922b','#2f8f5b','#7a3fa0','#c2562e','#2a9aa8','#b5367a'];
+
+function draw2D(){
+  dirty2d=false;
+  if(!G)return;
+  const w=stage2d.clientWidth,h=stage2d.clientHeight;
+  if(!w||!h)return;
+  const dpr=window.devicePixelRatio||1;
+  const c=cv2d;
+  if(c.width!==Math.round(w*dpr)||c.height!==Math.round(h*dpr)){
+    c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);
+    c.style.width=w+'px';c.style.height=h+'px';
+  }
+  const x=c.getContext('2d');
+  const cs=getComputedStyle(document.documentElement);
+  const col=n=>cs.getPropertyValue(n).trim();
+  if(view.fit)fitView(w,h);
+  const k=view.k;
+  const tx=w/2+view.x,ty=h/2+view.y+k*G.Ht/2;
+  x.setTransform(1,0,0,1,0,0);
+  x.clearRect(0,0,c.width,c.height);
+  x.setTransform(dpr*k,0,0,-dpr*k,dpr*tx,dpr*ty);
+  const R=G.rect;
+  if(S.lyStone){
+    x.fillStyle=col('--stone');
+    x.fillRect(R.x0,R.y0,R.x1-R.x0,R.y1-R.y0);
+  }else{
+    x.strokeStyle=col('--line');
+    x.lineWidth=1/k;
+    x.strokeRect(R.x0,R.y0,R.x1-R.x0,R.y1-R.y0);
+  }
+  if(S.lyStone&&S.stained&&G.barColor){
+    x.beginPath();
+    tracePaths(x,G.tracery);
+    x.fillStyle=G.barColor;
+    x.fill('evenodd');
+  }
+  if(S.lyGlass){
+    if(S.stained){
+      G.lightShapes.forEach((s,i)=>{
+        const lc=G.lightColors&&G.lightColors[i];
+        x.beginPath();
+        tracePaths(x,[s.outer].concat(s.holes));
+        x.fillStyle=(lc||STAIN[i%STAIN.length])+(lc?'E6':'88');
+        x.fill('evenodd');
+      });
+    }else{
+      x.beginPath();
+      tracePaths(x,G.lights);
+      x.fillStyle=col('--glass');
+      x.fill('evenodd');
+    }
+  }else{
+    x.beginPath();
+    tracePaths(x,G.lights);
+    x.fillStyle=col('--paper');
+    x.fill('evenodd');
+  }
+  x.beginPath();
+  tracePaths(x,G.lights);
+  x.strokeStyle=col('--ink');
+  x.globalAlpha=0.7;
+  x.lineWidth=1.3/k;
+  x.stroke();
+  x.globalAlpha=1;
+  x.beginPath();
+  tracePaths(x,G.op.O);
+  x.strokeStyle=col('--accent');
+  x.lineWidth=2/k;
+  x.stroke();
+  if(S.lyCons){
+    x.strokeStyle=col('--cons');
+    x.fillStyle=col('--cons');
+    x.lineWidth=1/k;
+    x.setLineDash([5/k,4/k]);
+    x.globalAlpha=0.65;
+    G.cons.forEach(o=>{
+      if(o.k==='c'){x.beginPath();x.arc(o.cx,o.cy,o.r,0,TAU);x.stroke();}
+      else if(o.k==='l'){x.beginPath();x.moveTo(o.x0,o.y0);x.lineTo(o.x1,o.y1);x.stroke();}
+    });
+    x.setLineDash([]);
+    x.globalAlpha=0.95;
+    G.cons.forEach(o=>{
+      if(o.k==='p'){x.beginPath();x.arc(o.x,o.y,3/k,0,TAU);x.fill();}
+    });
+    x.globalAlpha=1;
+  }
+  x.setTransform(dpr,0,0,dpr,0,0);
+  if(S.lyDims){
+    const P=(px,py)=>[tx+k*px,ty-k*py];
+    const op=G.op;
+    x.strokeStyle=col('--dim');
+    x.fillStyle=col('--dim');
+    x.lineWidth=1;
+    x.font='11px "Space Mono",monospace';
+    x.textAlign='center';
+    const y0=P(0,R.y0)[1]+22;
+    const a=P(-op.h,0)[0],b=P(op.h,0)[0];
+    x.beginPath();x.moveTo(a,y0);x.lineTo(b,y0);x.moveTo(a,y0-5);x.lineTo(a,y0+5);x.moveTo(b,y0-5);x.lineTo(b,y0+5);x.stroke();
+    x.fillText('span '+fmtLenS(S.span),(a+b)/2,y0+15);
+    const xr=P(R.x1,0)[0]+22;
+    const ya=P(0,0)[1],yb=P(0,op.Ht)[1];
+    x.beginPath();x.moveTo(xr,ya);x.lineTo(xr,yb);x.moveTo(xr-5,ya);x.lineTo(xr+5,ya);x.moveTo(xr-5,yb);x.lineTo(xr+5,yb);x.stroke();
+    x.save();x.translate(xr+15,(ya+yb)/2);x.rotate(-Math.PI/2);x.fillText('height '+fmtLenS(op.Ht),0,0);x.restore();
+    if(S.arch!=='circle'&&S.arch!=='flat'){
+      const ys=P(0,op.ys)[1],xl=P(R.x0,0)[0]-22;
+      x.beginPath();x.moveTo(xl,ys);x.lineTo(xl,yb);x.moveTo(xl-5,ys);x.lineTo(xl+5,ys);x.moveTo(xl-5,yb);x.lineTo(xl+5,yb);x.stroke();
+      x.save();x.translate(xl-8,(ys+yb)/2);x.rotate(-Math.PI/2);x.fillText('rise '+fmtLenS(op.rise),0,0);x.restore();
+    }
+  }
+}
+
+function polyShape(outer,holes){
+  const sh=new THREE.Shape(outer.map(q=>new THREE.Vector2(q.X/SC,q.Y/SC)));
+  holes.forEach(h=>sh.holes.push(new THREE.Path(h.map(q=>new THREE.Vector2(q.X/SC,q.Y/SC)))));
+  return sh;
+}
+
+function solid(shapes,D,b,mat){
+  let bb=Math.min(b,D/2.5);
+  if(bb<0.5)bb=0;
+  const geo=new THREE.ExtrudeGeometry(shapes,{depth:Math.max(D-2*bb,1),bevelEnabled:bb>0,bevelThickness:bb,bevelSize:bb,bevelOffset:-bb,bevelSegments:1,curveSegments:1,steps:1});
+  geo.translate(0,0,bb);
+  const m=new THREE.Mesh(geo,mat);
+  m.castShadow=true;
+  m.receiveShadow=true;
+  return m;
+}
+
+function disposeGroup(){
+  if(!group)return;
+  while(group.children.length){
+    const o=group.children.pop();
+    if(o.geometry)o.geometry.dispose();
+    if(o.material&&o.material.dispose&&!o.userData.sharedMat)o.material.dispose();
+  }
+}
+
+function build3D(){
+  dirty3d=false;
+  if(!G)return;
+  if(!renderer)return;
+  disposeGroup();
+  const stoneMat=new THREE.MeshStandardMaterial({color:0xc9bfa8,roughness:0.92,metalness:0,wireframe:S.wire});
+  const hw=G.hw;
+  const cham=Math.min(S.chamfer,hw*0.45);
+  const wallShapes=G.surTree.Childs().length?treeShapes(G.surTree).map(s=>polyShape(s.outer,s.holes)):[];
+  const tracShapes=treeShapes(G.tracTree).map(s=>polyShape(s.outer,s.holes));
+  const E=S.explode;
+  const wallD=S.wallDepth;
+  const wall=solid(wallShapes,wallD,S.chamfer,stoneMat);
+  wall.position.z=-wallD+E;
+  group.add(wall);
+  const tracD=S.tracDepth;
+  const tracMat=S.stained&&G.barColor?new THREE.MeshStandardMaterial({color:new THREE.Color(G.barColor),roughness:0.55,metalness:0,wireframe:S.wire}):stoneMat;
+  const trac=solid(tracShapes,tracD,cham,tracMat);
+  trac.position.z=-S.setback-tracD;
+  group.add(trac);
+  const gt=Math.max(8,Math.min(24,tracD*0.12));
+  G.lightShapes.forEach((s,i)=>{
+    const color=S.stained?((G.lightColors&&G.lightColors[i])||STAIN[i%STAIN.length]):'#9cc4ff';
+    const mat=new THREE.MeshPhysicalMaterial({color:new THREE.Color(color),transparent:true,opacity:S.glassOp,roughness:0.15,metalness:0,side:THREE.DoubleSide,depthWrite:false,wireframe:S.wire});
+    const geo=new THREE.ExtrudeGeometry([polyShape(s.outer,s.holes)],{depth:gt,bevelEnabled:false,curveSegments:1,steps:1});
+    const m=new THREE.Mesh(geo,mat);
+    m.position.z=-S.setback-tracD/2-gt/2-E;
+    m.receiveShadow=true;
+    m.renderOrder=2;
+    group.add(m);
+  });
+  if(S.edges&&!S.wire){
+    const lm=new THREE.LineBasicMaterial({color:0x1b1830,transparent:true,opacity:0.45});
+    const loops=(paths,z)=>{
+      paths.forEach(pa=>{
+        const pts=pa.map(q=>new THREE.Vector3(q.X/SC,q.Y/SC,z));
+        const l=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts),lm);
+        l.userData.sharedMat=true;
+        group.add(l);
+      });
+    };
+    const wb=Math.min(S.chamfer,wallD/2.5),tb=Math.min(cham,tracD/2.5);
+    loops(G.surround,E-wb+0.5);
+    loops(G.tracery,-S.setback-tb+0.5);
+  }
+  updateSun();
+  if(needCam){setView('obl');needCam=false;}
+}
+
+function updateSun(){
+  if(!sun||!G)return;
+  const az=S.sunAz*Math.PI/180,el=S.sunEl*Math.PI/180;
+  const cy=G.Ht/2;
+  const d=7000;
+  sun.position.set(Math.sin(az)*Math.cos(el)*d,cy+Math.sin(el)*d,Math.cos(az)*Math.cos(el)*d);
+  sun.target.position.set(0,cy,-200);
+  sun.target.updateMatrixWorld();
+  const ext=Math.max(G.rect.x1-G.rect.x0,G.Ht+2*S.margin)*0.9;
+  const sc=sun.shadow.camera;
+  sc.left=-ext;sc.right=ext;sc.top=ext;sc.bottom=-ext;sc.near=100;sc.far=16000;
+  sc.updateProjectionMatrix();
+}
+
+function setView(name){
+  if(!camera||!G)return;
+  const cy=G.Ht/2;
+  const W=G.rect.x1-G.rect.x0;
+  const tz=-(S.wallDepth)/2;
+  const half=Math.tan(camera.fov*Math.PI/360);
+  const D=Math.max(G.Ht*1.45,W*1.45/camera.aspect)/(2*half);
+  controls.target.set(0,cy,tz);
+  if(name==='front')camera.position.set(0,cy,D);
+  else if(name==='side')camera.position.set(Math.max(D,W*2),cy,tz);
+  else camera.position.set(D*0.45,cy+G.Ht*0.12,D*0.9);
+  camera.updateProjectionMatrix();
+  controls.update();
+}
+
+function init3D(){
+  try{
+    renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  }catch(e){
+    renderer=null;
+  }
+  if(!renderer){
+    stage3d.innerHTML='<div class="nogl">WebGL is not available in this browser.</div>';
+    return;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.setClearColor(0x000000,0);
+  stage3d.appendChild(renderer.domElement);
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(35,1,20,200000);
+  controls=new THREE.OrbitControls(camera,renderer.domElement);
+  controls.enableDamping=true;
+  controls.dampingFactor=0.12;
+  hemi=new THREE.HemisphereLight(0xe9eaff,0x3a3550,0.75);
+  scene.add(hemi);
+  sun=new THREE.DirectionalLight(0xfff1dc,0.95);
+  sun.castShadow=true;
+  sun.shadow.mapSize.set(2048,2048);
+  sun.shadow.bias=-0.0004;
+  scene.add(sun);
+  scene.add(sun.target);
+  group=new THREE.Group();
+  scene.add(group);
+  resize3D();
+}
+
+function resize3D(){
+  if(!renderer)return;
+  const w=stage3d.clientWidth,h=stage3d.clientHeight;
+  if(!w||!h)return;
+  renderer.setSize(w,h);
+  camera.aspect=w/h;
+  camera.updateProjectionMatrix();
+}
+
+function loop(){
+  requestAnimationFrame(loop);
+  if(blocked)return;
+  if(dirty2d)draw2D();
+  if(controls)controls.update();
+  if(renderer)renderer.render(scene,camera);
+}
+
+function refresh(){
+  rafPending=false;
+  if(dirtyGeo){
+    dirtyGeo=false;
+    try{
+      G=compute(S);
+    }catch(err){
+      toast('Geometry error — adjust parameters');
+      return;
+    }
+    dirty3d=true;dirty2d=true;
+    document.getElementById('analysis').innerHTML=analysisHtml();
+  }
+  if(dirty3d)build3D();
+  if(dirty2d&&!blocked)draw2D();
+}
+function schedule(geo){
+  if(geo)dirtyGeo=true;
+  dirty3d=true;
+  dirty2d=true;
+  if(!rafPending){rafPending=true;requestAnimationFrame(refresh);}
+}
+
+
+function diffs(a){
+  const o=[];
+  for(let i=1;i<a.length;i++)o.push(a[i]-a[i-1]);
+  return o;
+}
+function avg(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:null;}
+function uniqPos(a,L){
+  const t=a.slice().sort((x,y)=>x-y);
+  const o=[];
+  t.forEach(v=>{if(!o.length||v-o[o.length-1]>L*0.004)o.push(v);});
+  return o;
+}
+function clusterLens(vals,tol){
+  const t=vals.slice().sort((a,b)=>b-a);
+  const o=[];
+  t.forEach(v=>{if(!o.length||Math.abs(o[o.length-1]-v)/o[o.length-1]>tol)o.push(v);});
+  return o;
+}
+
+function cmpBuild(){
+  const W=S.cmpW>0?S.cmpW:S.span;
+  const H=S.cmpH>0?S.cmpH:(S.arch==='circle'?S.span:S.height);
+  const m=mondrianBuild(W,H,S.cmpSeed,Math.round(S.cmpSplits));
+  const mond={W,H,segs:m.segs,
+    xs:uniqPos([0,W].concat(m.segs.filter(g=>g.o==='v').map(g=>g.pos)),W),
+    ys:uniqPos([0,H].concat(m.segs.filter(g=>g.o==='h').map(g=>g.pos)),H),
+    cells:m.rects.map(r=>({x0:r.x0,y0:r.y0,x1:r.x1,y1:r.y1,hex:MOND_PAL[r.color],chroma:r.color!=='W'}))};
+  const series=S.cmpSeries;
+  const cols=Math.round(S.cmpCols),rows=Math.round(S.cmpRows);
+  const tx=modTerms(cols,series,W,S.cmpMirror),ty=modTerms(rows,series,H,S.cmpMirror);
+  const xs=[0],ys=[0];
+  tx.terms.forEach(t=>xs.push(xs[xs.length-1]+t*10*tx.scale));
+  ty.terms.forEach(t=>ys.push(ys[ys.length-1]+t*10*ty.scale));
+  const rng=mulberry32(Math.round(S.cmpSeed)*31+5);
+  const pool=[0,0,0,0,1,2,3];
+  const cells=[];
+  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
+    const ci=pool[Math.floor(rng()*pool.length)];
+    cells.push({x0:xs[i],y0:ys[j],x1:xs[i+1],y1:ys[j+1],nw:tx.terms[i],nh:ty.terms[j],hex:CORB_PAL[ci],chroma:ci>0});
+  }
+  const segs=[];
+  for(let i=1;i<cols;i++)segs.push({o:'v',pos:xs[i],a:0,b:H});
+  for(let j=1;j<rows;j++)segs.push({o:'h',pos:ys[j],a:0,b:W});
+  const mod={W,H,segs,xs,ys,cells,tx,ty,series};
+  return {mond,mod};
+}
+
+function nearV(v,t,tol){return Math.abs(v-t)/t<=tol;}
+
+function junctions(m){
+  const e=0.003*Math.max(m.W,m.H);
+  const vs=m.segs.filter(g=>g.o==='v'),hs=m.segs.filter(g=>g.o==='h');
+  let cross=0,tee=0;
+  vs.forEach(v=>hs.forEach(h=>{
+    if(v.pos<h.a-e||v.pos>h.b+e||h.pos<v.a-e||h.pos>v.b+e)return;
+    const vInt=h.pos>v.a+e&&h.pos<v.b-e;
+    const hInt=v.pos>h.a+e&&v.pos<h.b-e;
+    if(vInt&&hInt)cross++;
+    else if(vInt||hInt)tee++;
+  }));
+  return {cross,tee};
+}
+
+function mirrorScore(pos,L){
+  const p=pos.filter(v=>v>L*0.002&&v<L*0.998);
+  let k=0;
+  p.forEach(v=>{if(p.some(u=>Math.abs((L-u)-v)<=L*0.015))k++;});
+  return {k,n:p.length};
+}
+
+function goldenScore(pos,L){
+  const p=pos.filter(v=>v>L*0.002&&v<L*0.998);
+  let k=0;
+  p.forEach(v=>{const f=v/L;if(Math.abs(f-0.382)<=0.02||Math.abs(f-0.618)<=0.02)k++;});
+  return {k,n:p.length};
+}
+
+function cmpMetrics(m){
+  const dx=diffs(m.xs),dy=diffs(m.ys);
+  const rep=clusterLens(dx.concat(dy),0.03);
+  const ratios=[];
+  [dx,dy].forEach(d=>{for(let i=0;i+1<d.length;i++)ratios.push(Math.max(d[i],d[i+1])/Math.min(d[i],d[i+1]));});
+  const asc=rep.slice().sort((a,b)=>a-b);
+  let addN=0,addD=0;
+  for(let i=2;i<asc.length;i++){
+    addD++;
+    let ok=false;
+    for(let a=0;a<i&&!ok;a++)for(let b=a+1;b<i;b++){
+      if(Math.abs(asc[a]+asc[b]-asc[i])/asc[i]<=0.04){ok=true;break;}
+    }
+    if(ok)addN++;
+  }
+  const asp=m.cells.map(c=>{const w=c.nw||(c.x1-c.x0),h=c.nh||(c.y1-c.y0);return Math.max(w,h)/Math.min(w,h);});
+  const phiHit=asp.filter(a=>[1.618,2.618,4.236,6.854].some(t=>nearV(a,t,0.05))).length;
+  const ratHit=asp.filter(a=>[1,1.25,4/3,1.5,2,2.5,3,4].some(t=>nearV(a,t,0.05))).length;
+  const sx=mirrorScore(m.xs,m.W),sy=mirrorScore(m.ys,m.H);
+  const gx=goldenScore(m.xs,m.W),gy=goldenScore(m.ys,m.H);
+  let tot=0,col=0,cx=0,cy=0;
+  m.cells.forEach(c=>{
+    const a=(c.x1-c.x0)*(c.y1-c.y0);
+    tot+=a;
+    if(c.chroma){col+=a;cx+=a*(c.x0+c.x1)/2;cy+=a*(c.y0+c.y1)/2;}
+  });
+  const off=col>0?Math.hypot(cx/col-m.W/2,cy/col-m.H/2)/Math.hypot(m.W,m.H)*100:null;
+  const j=junctions(m);
+  return {
+    distinct:rep.length,
+    meanRatio:avg(ratios),
+    phiDev:ratios.length?avg(ratios.map(r=>Math.abs(r-PHI)/PHI))*100:null,
+    addN,addD,
+    phiPct:asp.length?phiHit/asp.length*100:null,
+    ratPct:asp.length?ratHit/asp.length*100:null,
+    symK:sx.k+sy.k,symN:sx.n+sy.n,
+    goldK:gx.k+gy.k,goldN:gx.n+gy.n,
+    cross:j.cross,tee:j.tee,
+    covPct:tot?col/tot*100:0,
+    off,
+    nCells:m.cells.length
+  };
+}
+
+function cmpOverlay(A,B){
+  const tol=0.02;
+  const flags=[];
+  let n=0,hit=0,offs=[];
+  B.segs.forEach((g,i)=>{
+    const L=g.o==='v'?B.W:B.H;
+    const pool=(g.o==='v'?A.xs:A.ys).filter(v=>v>L*0.002&&v<L*0.998);
+    let d=1e9;
+    pool.forEach(v=>{const e=Math.abs(v-g.pos)/L;if(e<d)d=e;});
+    flags[i]=d<=tol;
+    n++;
+    if(d<=tol)hit++;
+    if(d<1e8)offs.push(d*100);
+  });
+  return {flags,n,hit,meanOff:avg(offs)};
+}
+
+function fmtPct(v,d){return v===null||v===undefined?'—':v.toFixed(d||0)+'%';}
+function fmtNum(v,d){return v===null||v===undefined?'—':v.toFixed(d===undefined?2:d);}
+
+function cmpTableHtml(mm,mo,ov,A,B){
+  const rows=[
+    ['Distinct lengths',String(mm.distinct),String(mo.distinct),'Modulor reuses one series; Mondrian varies freely'],
+    ['Neighbour ratio',fmtNum(mm.meanRatio)+' : 1',fmtNum(mo.meanRatio)+' : 1','φ = 1.618'],
+    ['Deviation from φ',fmtPct(mm.phiDev,1),fmtPct(mo.phiDev,1),'mean over adjacent divisions'],
+    ['Additive lengths (a + b = c)',mm.addD?mm.addN+' / '+mm.addD:'—',mo.addD?mo.addN+' / '+mo.addD:'—','the Fibonacci property, within 4%'],
+    ['Cells at φᵏ aspect',fmtPct(mm.phiPct),fmtPct(mo.phiPct),'1.618, 2.618, 4.236, 6.854, ±5%; Modulor on nominal series values'],
+    ['Cells at simple rational aspect',fmtPct(mm.ratPct),fmtPct(mo.ratPct),'1, 5:4, 4:3, 3:2, 2, 5:2, 3, 4, ±5%'],
+    ['Mirror-symmetric lines',mm.symN?mm.symK+' / '+mm.symN:'—',mo.symN?mo.symK+' / '+mo.symN:'—','line has a partner across the centreline'],
+    ['Lines at golden sections',mm.goldN?mm.goldK+' / '+mm.goldN:'—',mo.goldN?mo.goldK+' / '+mo.goldN:'—','0.382 or 0.618 of the dimension, ±2%'],
+    ['Junctions: crosses · Ts',mm.cross+' · '+mm.tee,mo.cross+' · '+mo.tee,'crossing lines vs lines that stop'],
+    ['Colour coverage · centroid offset',fmtPct(mm.covPct)+' · '+fmtPct(mm.off,1),fmtPct(mo.covPct)+' · '+fmtPct(mo.off,1),'offset of coloured mass from centre, % of diagonal']
+  ];
+  let h='<table><thead><tr><th>Measure</th><th>Modulor</th><th>Mondrian</th><th>Reading</th></tr></thead><tbody>';
+  rows.forEach(r=>{h+=`<tr><td>${escapeHtml(r[0])}</td><td class="n">${escapeHtml(r[1])}</td><td class="n">${escapeHtml(r[2])}</td><td class="w">${escapeHtml(r[3])}</td></tr>`;});
+  h+='</tbody></table>';
+  const sName=S.cmpSeries==='red'?'Red':'Blue';
+  h+='<div class="cmp-note">';
+  h+=`<p><b>Modulor ${sName}.</b> ${mm.distinct} distinct lengths drawn from one series, in which each term is the sum of the two before it. Neighbouring divisions differ by ${fmtNum(mm.meanRatio)} : 1 on average, ${fmtPct(mm.phiDev,1)} from φ, because the printed series values are rounded to whole centimetres. Every line runs edge to edge, so every junction is a cross (${mm.cross}) and none is a T.</p>`;
+  h+=`<p><b>Mondrian-style composition.</b> ${mo.distinct} distinct lengths with ${mo.addD?mo.addN+' of '+mo.addD:'no'} additive relationships; neighbours differ by ${fmtNum(mo.meanRatio)} : 1 on average, ${fmtPct(mo.phiDev,1)} from φ. ${fmtPct(mo.ratPct)} of its fields have simple rational proportions against ${fmtPct(mo.phiPct)} at φᵏ. Lines stop at other lines (${mo.tee} Ts, ${mo.cross} crosses), and the composition is balanced by colour weight, with the coloured mass sitting ${fmtPct(mo.off,1)} of the diagonal off centre, not by a repeating proportion.</p>`;
+  h+=`<p><b>Overlay.</b> ${ov.hit} of ${ov.n} Mondrian line segments fall within 2% of a Modulor line on the same axis, with a mean nearest-line offset of ${fmtPct(ov.meanOff,1)} of the dimension. The two systems share an opening and a vocabulary of rectangles but not a rule: Modulor fixes the ratio and lets the layout follow, Mondrian fixes the balance and lets the ratios fall where they need to.</p>`;
+  h+=`<p style="color:var(--mute)">Figures describe the composition on screen (seed ${Math.round(S.cmpSeed)}, ${Math.round(S.cmpSplits)} splits). It is a generated study in Mondrian's manner, not a measurement of any painting.</p>`;
+  h+='</div>';
+  return h;
+}
+
+function cmpScene(cv,model,mode,ov,other){
+  const st=cv.parentElement;
+  const w=st.clientWidth,h=st.clientHeight;
+  if(!w||!h)return;
+  const dpr=window.devicePixelRatio||1;
+  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){
+    cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
+    cv.style.width=w+'px';cv.style.height=h+'px';
+  }
+  const x=cv.getContext('2d');
+  x.setTransform(dpr,0,0,dpr,0,0);
+  x.clearRect(0,0,w,h);
+  const cs=getComputedStyle(document.documentElement);
+  const col=n=>cs.getPropertyValue(n).trim();
+  const W=model.W,H=model.H,pad=UNITS==='imperial'?64:44;
+  const k=Math.min((w-2*pad)/W,(h-2*pad)/H);
+  const ox=(w-W*k)/2,oy=(h-H*k)/2;
+  const X=v=>ox+v*k,Y=v=>oy+(H-v)*k;
+  const lw=Math.max(2.5,Math.min(14,S.bar*k));
+  const line=(g,color,width,dash)=>{
+    x.beginPath();
+    if(g.o==='v'){x.moveTo(X(g.pos),Y(g.a));x.lineTo(X(g.pos),Y(g.b));}
+    else{x.moveTo(X(g.a),Y(g.pos));x.lineTo(X(g.b),Y(g.pos));}
+    x.strokeStyle=color;x.lineWidth=width;x.setLineDash(dash||[]);x.stroke();x.setLineDash([]);
+  };
+  if(mode==='ovl'){
+    x.fillStyle=col('--card');
+    x.fillRect(X(0),Y(H),W*k,H*k);
+    x.strokeStyle=col('--line');x.lineWidth=1.5;
+    x.strokeRect(X(0),Y(H),W*k,H*k);
+    if(S.cmpPhi){
+      [0.382,0.618].forEach(f=>{
+        line({o:'v',pos:W*f,a:0,b:H},col('--dim'),1,[5,4]);
+        line({o:'h',pos:H*f,a:0,b:W},col('--dim'),1,[5,4]);
+      });
+    }
+    other.mod.segs.forEach(g=>line(g,'#5B9BFF',3.5));
+    other.mond.segs.forEach((g,i)=>line(g,ov.flags[i]?'#4FD18B':'#F0584A',ov.flags[i]?4.5:2.5));
+    x.font='10px "Space Mono",monospace';
+    x.textAlign='left';
+    const lg=[['#5B9BFF','Modulor'],['#F0584A','Mondrian'],['#4FD18B','within 2%']];
+    lg.forEach((l,i)=>{x.fillStyle=l[0];x.fillRect(10,10+i*15,14,3);x.fillStyle=col('--mute');x.fillText(l[1],30,14+i*15);});
+    if(S.cmpPhi){x.fillStyle=col('--dim');x.fillText('┄ φ sections',10,14+lg.length*15);}
+    return;
+  }
+  model.cells.forEach(c=>{
+    x.fillStyle=c.hex;
+    x.fillRect(X(c.x0),Y(c.y1),(c.x1-c.x0)*k,(c.y1-c.y0)*k);
+  });
+  const dark='#151515';
+  model.segs.forEach(g=>line(g,dark,lw));
+  x.strokeStyle=dark;x.lineWidth=lw;
+  x.strokeRect(X(0),Y(H),W*k,H*k);
+  x.fillStyle=col('--dim');
+  x.font='10px "Space Mono",monospace';
+  const dx=diffs(model.xs),dy=diffs(model.ys);
+  x.textAlign='center';
+  dx.forEach((d,i)=>{
+    if(d*k<(UNITS==='imperial'?56:34))return;
+    x.fillText(fmtLenS(d),X((model.xs[i]+model.xs[i+1])/2),oy-8-lw/2);
+  });
+  x.textAlign='right';
+  dy.forEach((d,j)=>{
+    if(d*k<16)return;
+    x.fillText(fmtLenS(d),ox-8-lw/2,Y((model.ys[j]+model.ys[j+1])/2)+3);
+  });
+}
+
+function cmpInfoText(m){
+  return 'cols '+fmtTerms(m.tx.terms,m.tx.scale)+' · rows '+fmtTerms(m.ty.terms,m.ty.scale);
+}
+
+function cmpUpdate(){
+  const el=document.getElementById('cmp');
+  if(el.hidden)return;
+  const {mond,mod}=cmpBuild();
+  const mm=cmpMetrics(mod),mo=cmpMetrics(mond);
+  const ov=cmpOverlay(mod,mond);
+  document.getElementById('cmTitleB').textContent=(S.cmpSeries==='red'?'RED':'BLUE')+' SERIES';
+  document.getElementById('cmInfoB').textContent=cmpInfoText(mod);
+  document.getElementById('cmInfoM').textContent=fmtLen(mond.W)+' × '+fmtLen(mond.H)+' · '+mond.cells.length+' fields · seed '+Math.round(S.cmpSeed);
+  document.getElementById('cmInfoO').textContent=ov.hit+' of '+ov.n+' Mondrian segments within 2% of a Modulor line';
+  document.getElementById('cmTab').innerHTML=cmpTableHtml(mm,mo,ov,mod,mond);
+  cmpScene(document.getElementById('cvB'),mod,'mod');
+  cmpScene(document.getElementById('cvM'),mond,'mond');
+  cmpScene(document.getElementById('cvO'),mond,'ovl',ov,{mod,mond});
+}
+
+function cmpSyncControls(){
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v;};
+  set('cm_series',S.cmpSeries);
+  set('cm_w',S.cmpW);set('cm_h',S.cmpH);
+  set('cm_cols',S.cmpCols);set('cm_rows',S.cmpRows);
+  set('cm_splits',S.cmpSplits);set('cm_seed',S.cmpSeed);
+  document.getElementById('cm_mirror').checked=!!S.cmpMirror;
+  document.getElementById('cm_phi').checked=!!S.cmpPhi;
+  document.getElementById('cv_cols').textContent=S.cmpCols;
+  document.getElementById('cv_rows').textContent=S.cmpRows;
+  document.getElementById('cv_splits').textContent=S.cmpSplits;
+  document.getElementById('cv_seed').textContent=S.cmpSeed;
+}
+
+function cmpFillDims(){
+  const opts=[['0','Window']].concat([43,53,70,86,113,140,183,226,296,366].map(v=>[String(v*10),UNITS==='imperial'?fmtImp(v*10):v+' cm'])).map(o=>`<option value="${escapeAttr(o[0])}">${escapeHtml(o[1])}</option>`).join('');
+  ['cm_w','cm_h'].forEach(id=>{document.getElementById(id).innerHTML=opts;});
+}
+
+function cmpOpen(){
+  document.getElementById('cmp').hidden=false;
+  cmpSyncControls();
+  requestAnimationFrame(cmpUpdate);
+}
+function cmpClose(){
+  document.getElementById('cmp').hidden=true;
+}
+
+function cmpInit(){
+  const ctl=document.getElementById('cmCtl');
+  ctl.innerHTML=`<label>Series <select id="cm_series"><option value="blue">Blue</option><option value="red">Red</option></select></label>
+  <label>Columns <input type="range" id="cm_cols" min="2" max="8" step="1"><span id="cv_cols"></span></label>
+  <label>Rows <input type="range" id="cm_rows" min="2" max="8" step="1"><span id="cv_rows"></span></label>
+  <label><input type="checkbox" id="cm_mirror"> mirror</label>
+  <label>Mondrian splits <input type="range" id="cm_splits" min="3" max="16" step="1"><span id="cv_splits"></span></label>
+  <label>Seed <input type="range" id="cm_seed" min="1" max="999" step="1"><span id="cv_seed"></span></label>
+  <button id="cm_reseed">Reseed</button>
+  <label><input type="checkbox" id="cm_phi"> φ sections</label>
+  <label>Width <select id="cm_w"></select></label>
+  <label>Height <select id="cm_h"></select></label>
+  <button id="cm_useB">Use Modulor in window</button>
+  <button id="cm_useM">Use Mondrian in window</button>`;
+  const num=(id,key)=>document.getElementById(id).addEventListener('input',e=>{S[key]=parseFloat(e.target.value);cmpSyncControls();saveState();cmpUpdate();});
+  num('cm_cols','cmpCols');num('cm_rows','cmpRows');num('cm_splits','cmpSplits');num('cm_seed','cmpSeed');
+  document.getElementById('cm_series').addEventListener('change',e=>{S.cmpSeries=e.target.value;saveState();cmpUpdate();});
+  document.getElementById('cm_mirror').addEventListener('change',e=>{S.cmpMirror=e.target.checked;saveState();cmpUpdate();});
+  document.getElementById('cm_phi').addEventListener('change',e=>{S.cmpPhi=e.target.checked;saveState();cmpUpdate();});
+  document.getElementById('cm_reseed').addEventListener('click',()=>{S.cmpSeed=1+Math.floor(Math.random()*998);cmpSyncControls();saveState();cmpUpdate();});
+  cmpFillDims();
+  document.getElementById('cm_w').addEventListener('change',e=>{S.cmpW=parseInt(e.target.value,10);saveState();cmpUpdate();});
+  document.getElementById('cm_h').addEventListener('change',e=>{S.cmpH=parseInt(e.target.value,10);saveState();cmpUpdate();});
+  document.getElementById('cm_useB').addEventListener('click',()=>{
+    const sch=S.cmpSeries==='red'?'modRed':'modBlue';
+    Object.assign(S,{arch:'flat',span:S.cmpW>0?S.cmpW:S.span,height:S.cmpH>0?S.cmpH:S.height,pattern:'grid',scheme:sch,rowScheme:sch,cols:S.cmpCols,rows:S.cmpRows,sym:!!S.cmpMirror,warp:0,polychrome:true,stained:true,seed:S.cmpSeed});
+    view.fit=true;syncControls();saveState();schedule(true);cmpClose();
+    toast('Modulor grid applied to window');
+  });
+  document.getElementById('cm_useM').addEventListener('click',()=>{
+    Object.assign(S,{arch:'flat',span:S.cmpW>0?S.cmpW:S.span,height:S.cmpH>0?S.cmpH:S.height,pattern:'mondrian',mondSplits:S.cmpSplits,mondSeed:S.cmpSeed,bar:Math.max(S.bar,40),stained:true});
+    view.fit=true;syncControls();saveState();schedule(true);cmpClose();
+    toast('Mondrian composition applied to window');
+  });
+  document.getElementById('cmClose').addEventListener('click',cmpClose);
+  document.getElementById('btnCmp').addEventListener('click',cmpOpen);
+  window.addEventListener('resize',cmpUpdate);
+}
+
+const HELP_TABS=[['start','Start here'],['controls','Controls'],['math','How the math works'],['numbers','Reading the numbers'],['glossary','Glossary'],['limits','Limits']];
+const HELP_LEVELS=[['s','Student'],['d','Designer'],['p','Professional']];
+const HELP_LVL_KEY='tracery.helplevel';
+let helpState={tab:'start',level:'s',q:''};
+
+const HELP_START=`
+<h2>What TRACERY does</h2>
+<p>TRACERY draws the geometry behind architectural windows, from Romanesque and Gothic tracery to Islamic lattice screens, Art Nouveau curves, Mondrian compositions and Le Corbusier's Modulor grids. The left view shows the flat construction, with the circles and centres a mason would have used to set the shapes out. The right view stands the same shapes up in 3D, with stone, tracery and glass as separate layers.</p>
+<p>Every control changes both views at once, and the strip at the bottom reports the numbers that define what you see.</p>
+<h2>Quick start</h2>
+<ol>
+<li>Open <b>Presets</b> in the top bar and pick one, for example <i>Geometric Gothic — two lights + sexfoil</i>.</li>
+<li>In the left panel, change the <b>Head</b> (the shape of the top of the opening) and watch the construction circles move.</li>
+<li>Change the <b>Pattern</b> under Tracery to fill the opening differently.</li>
+<li>Adjust <b>Bar width</b> to make the stone heavier or lighter.</li>
+<li>Drag in the 3D view to orbit. Use <b>Explode layers</b> to pull the wall, tracery and glass apart.</li>
+<li>Press <b>Compare</b> to set a Modulor grid against a Mondrian composition on the same opening.</li>
+</ol>
+<h2>Five things to try</h2>
+<ul>
+<li><b>Lancet to drop.</b> Head: Pointed. Drag <i>Radius ÷ span</i> from 0.5 (round) through 1.0 (equilateral) to 2.0 (tall lancet).</li>
+<li><b>Fit circles into a gap.</b> Pattern: Geometric. Raise <i>Packed circles</i> and watch each one grow until it touches its neighbours.</li>
+<li><b>Count the petals.</b> Head: Circular, Pattern: Rose. Move <i>Petals</i> from 6 to 16 and see the petal radius shrink.</li>
+<li><b>Same opening, two systems.</b> Press Compare and read the measures table.</li>
+<li><b>Light and shadow.</b> In 3D form, move <i>Sun azimuth</i> and <i>Sun elevation</i> and watch the tracery shade the glass.</li>
+</ul>
+<h2>Three reading levels</h2>
+<p>The <b>How the math works</b> tab explains each result at three levels. <b>Student</b> uses everyday language and pictures. <b>Designer</b> adds the vocabulary and controls you would use in practice. <b>Professional</b> gives the equations, tolerances and algorithms. Every topic ends with a box that plugs your current window into the formulas.</p>
+<p>The small <b>?</b> buttons beside each control group jump straight to the relevant topic.</p>`;
+
+const HELP_CONTROLS=[
+['Top bar',[
+['Presets','Loads a complete window. Each one replaces all current settings.'],
+['Compare','Opens the side-by-side Modulor and Mondrian study.'],
+['Help','Opens this guide.'],
+['Reseed','Picks a new random seed for the organic warp and the Mondrian composition.'],
+['SVG','Downloads the 2D linework in millimetres, with construction circles if that layer is on.'],
+['Reset','Returns every setting to its default after asking you to confirm.'],
+['Imperial / Metric','Switches every displayed length between feet-inches and millimetres. The window itself does not change.'],
+['Light / Dark','Switches the colour theme.']]],
+['Opening',[
+['Head','The shape of the top of the opening: semicircular, segmental, horseshoe, pointed, four-centred, ogee, multifoil, elliptical, parabolic, catenary, flat or circular.'],
+['Span','Width of the opening between the jambs.'],
+['Height to apex','Overall height of the opening from sill to the top of the head.'],
+['Rise ÷ span','How tall the curved head is compared with the width. Used by segmental, four-centred, ogee, elliptical, parabolic and catenary heads.'],
+['Radius ÷ span','Size of the compass arcs compared with the width. 0.5 is a semicircle, 1.0 is equilateral, larger is a taller lancet. Also sets the base arch under a multifoil head.'],
+['Centre lift','How far above the springing line the horseshoe circle is centred, as a fraction of half the span.'],
+['Corner radius and Junction angle','Set the two arcs of a four-centred or ogee head. Not every combination can be drawn. The tool tells you when it falls back to an equilateral arch.'],
+['Lobes and Lobe depth','Number of scallops on a multifoil head and how deep each one is.']]],
+['Tracery',[
+['Pattern','How the opening is filled: plain, mullioned, geometric, rose, grid, Mondrian or lattice.'],
+['Lights','Number of vertical divisions for mullioned and geometric patterns.'],
+['Division scheme','Whether divisions are equal, follow the golden ratio or Fibonacci numbers, or use the Modulor Blue or Red series.'],
+['Mirror divisions','Reflects the series so the largest division sits in the middle.'],
+['Sub-light radius, springing and cusps','Shape the small arched windows inside a geometric pattern: how pointed they are, how high their curves start, and whether their heads are cusped.'],
+['Packed circles, Smallest circle radius, Foil lobes','Fill the gap above the sub-lights with circles, stop when they get too small, and turn each into a trefoil, quatrefoil and so on.'],
+['Rose style, Petals','Plate circles or radial spokes, and how many around the ring.'],
+['Columns, Rows, Row scheme','Grid divisions across and up the opening.'],
+['Organic warp, Warp wavelength, Seed','Bend the grid lines into flowing Art Nouveau curves. The same seed always gives the same curves.'],
+['Corbusier polychromy','Colours grid cells ivory, brick red, Prussian blue and ochre.'],
+['Splits and Composition seed','How many cuts the Mondrian generator makes and which composition results.'],
+['Cell, Pitch, Rotation','Tile shape, tile size and turning angle for lattice patterns.'],
+['Star points, Star depth, Diamond lights','Shape of star tiles and the small diamonds between them.']]],
+['Bars and surround',[
+['Bar width','Thickness of the stone between lights.'],
+['Jamb / frame width','Thickness of stone at the edge of the opening. It is never less than half a bar.'],
+['Wall margin','How much wall is drawn around the opening.']]],
+['3D form',[
+['Wall thickness, Tracery depth, Setback','How deep the wall is, how deep the tracery bars are, and how far behind the wall face the tracery sits.'],
+['Chamfer','Bevel on the stone edges. It is limited so narrow bars keep a flat face.'],
+['Glass opacity and Colour fills','How see-through the glass is, and whether it takes stained tints, Mondrian colours or Corbusier polychromy.'],
+['Explode layers','Slides the wall forward and the glass back so each layer can be seen.'],
+['Edge lines and Wireframe','Draw the outlines of the stone, or show the mesh.'],
+['Sun azimuth and elevation','Direction of the light that casts shadows from the tracery onto the glass.']]],
+['Views',[
+['2D layers','Toggle stone, glass, construction geometry and dimension lines. Drag to pan, scroll or pinch to zoom, double-click or press Fit to reset.'],
+['3D view','Drag to orbit, scroll to zoom. Front, Oblique and Section snap to standard views.'],
+['Compare controls','Choose Blue or Red series, grid size, mirror, Mondrian splits and seed, window size from Modulor values, and apply either system to the main window.']]]
+];
+
+const HELP_NUMBERS=[
+['Head','Name of the arch type. For pointed heads it tells you whether the proportions make it drop, equilateral or lancet.'],
+['Span, Rise, Total height','Opening width, height of the curved head above the springing line, and sill-to-apex height.'],
+['Rise ÷ span','Proportion of the head. 0.5 is a semicircle, 0.866 is equilateral, below 0.5 is flatter, above 0.866 is a lancet.'],
+['Springing height','Height of the line where the straight jambs end and the curve begins.'],
+['Centres','How many separate compass points are needed to strike the head. A semicircle needs one, a pointed arch two, a Tudor arch four.'],
+['Radii ÷ span','Each compass radius as a multiple of the span. An equilateral arch reads 1.000.'],
+['Apex angle','Angle between the two curves where they meet at the top. An equilateral arch reads 120°.'],
+['Detail','Extra facts for some heads, such as horseshoe arc sweep or catenary chain parameter.'],
+['Lights','Number of separate glass areas.'],
+['Glazing ratio','Share of the opening that is glass rather than stone.'],
+['Bar · frame','Bar width and the effective frame width, which is never less than half a bar.'],
+['Packed circles','How many circles were placed and their radii as a fraction of the span.'],
+['Petal radius','For rose windows, petal radius as a fraction of the rose radius, from the formula in the rose topic.'],
+['Grid, Columns, Rows','Grid size. With a Modulor scheme, the series terms used (in cm, or inches in imperial) and the scale factor needed to fit your opening.'],
+['Lattice pitch, Cells','Tile size actually used and the number of tiles. The pitch grows if the tiling would be too dense.'],
+['Composition','Number of fields in a Mondrian composition and its seed.'],
+['Notice','Appears when something could not be drawn as asked, for example parameters with no valid arch, or bars wider than the cells.'],
+['Compare table','Ten measures of how each system uses proportion. See the Compare topic under How the math works.']
+];
+
+const HELP_GLOSSARY=[
+['Apex','The highest point of the head.'],
+['Bar','A stone strip between two lights. Also called a mullion when vertical and a transom when horizontal.'],
+['Catenary','The curve of a hanging chain. Turned upside down it is the shape of an arch carrying only its own weight.'],
+['Centre (of an arc)','The point a compass would be placed on to draw the arc.'],
+['Chamfer','A bevelled edge.'],
+['Cusp','The sharp point where two arcs meet, pointing inward.'],
+['Equilateral arch','A pointed arch whose radius equals its span, so the two springing points and the apex form an equilateral triangle.'],
+['Foil (trefoil, quatrefoil…)','A shape made of overlapping lobes: three, four, five or more.'],
+['Fibonacci numbers','The series 1, 1, 2, 3, 5, 8, 13… where each number is the sum of the two before.'],
+['Frame (jamb) width','Thickness of stone at the edge of the opening.'],
+['Glazing ratio','Share of the opening area that is glass.'],
+['Golden ratio (φ)','About 1.618. Two lengths are in the golden ratio when the whole is to the larger as the larger is to the smaller.'],
+['Head','The top of a window opening.'],
+['Jali / mashrabiya','A pierced screen in a repeating geometric pattern, common in Islamic architecture.'],
+['Jamb','The vertical side of an opening.'],
+['Lancet','A tall, narrow pointed arch whose radius is larger than its span.'],
+['Light','One glazed opening between bars.'],
+['Modulor','Le Corbusier\'s system of proportions based on the golden ratio and a standing human figure, published as the Red and Blue series.'],
+['Mullion','A vertical bar dividing an opening into lights.'],
+['Ogee','An S-shaped curve: convex then concave.'],
+['Oculus','A circular opening.'],
+['Plate tracery','Early Gothic tracery formed by cutting shapes through a solid slab of stone.'],
+['Bar tracery','Later Gothic tracery formed from slender stone bars.'],
+['Polychromy','Use of several colours.'],
+['Rise','Height of the curved head above the springing line.'],
+['Rose window','A circular window with a radial or ring arrangement of lights.'],
+['Seed','A number that fixes a random choice so the same seed always gives the same result.'],
+['Setback','Distance the tracery sits behind the face of the wall.'],
+['Span','Width of an opening.'],
+['Spandrel','The space between an arch and the shapes beneath or beside it.'],
+['Springing line','The level where the straight jambs end and the curve begins.'],
+['Sub-light','A smaller arched window nested inside a larger opening.'],
+['T-junction','A place where one line ends against another. A cross is where two lines pass through each other.'],
+['Tracery','Ornamental stonework that divides the upper part of a window.'],
+['Transom','A horizontal bar dividing an opening.']
+];
+
+const HELP_LIMITS=[
+'TRACERY is a geometry study. It does not model structure, load paths, mortar joints, glass thickness, glazing rebates or weather detailing.',
+'Gothic setting-out varied between masters and regions. The arch and tracery constructions here are standard textbook geometries and will not match every historic example.',
+'Four-centred and ogee heads need compatible rise, corner radius and junction angle. When no curve exists the tool shows an equilateral arch and says so in the analysis strip.',
+'Packed circles are placed greedily, largest first. That gives good-looking tracery but is not the mathematically optimal packing.',
+'Curves are drawn as short straight segments about 4° of arc each. Dimensions are exact to the segment, not to the true curve.',
+'Lattice patterns cap at about 420 tiles. Beyond that the pitch is enlarged and the analysis strip shows the pitch actually used.',
+'Modulor fits scale a run of series values to your opening. A scale factor far from 1.000 means the result is proportioned like the Modulor but not dimensioned like it.',
+'The Mondrian composition is a generated study in his manner. It is not a copy or measurement of any painting, and its Compare figures describe only the composition on screen.',
+'Imperial display rounds to 1/16 inch below 24 inches and 1/8 inch above. Values are converted from millimetres, which remain the working unit.',
+'3D glass is a simple translucent slab. Colours are illustrative, not a daylight or colour-rendering simulation.'
+];
+
+const HELP_TOPICS=[
+{id:'pipeline',t:'From a few numbers to a window',
+s:`<p>TRACERY turns your settings into shapes. It first draws the outline of the opening, the hole in the wall. Then it draws a set of <b>cells</b>, the spaces where glass will go. Every cell is shrunk a little all the way around, so a strip of stone is left between neighbours. Whatever is left inside the cells is glass, and the rest is stone.</p><p>The 2D view shows those shapes flat. The 3D view pushes them out into thickness.</p>`,
+d:`<p>The steps are: build the head curve and close it into the <b>opening</b>; ask the chosen pattern for its <b>cells</b>, drawn on the centre lines of the bars; shrink each cell by half the bar width; clip the result to the opening shrunk by the frame width. Those are the <b>lights</b>. The tracery is the opening minus the lights, and the wall surround is the wall rectangle minus the opening.</p><p>Everything is a polygon. Curves are held as short straight segments.</p>`,
+p:`<p>Opening O is a polygon with arcs sampled at Δθ = 0.07 rad (about 4°). Coordinates are millimetres, scaled ×100 to integers for Clipper (0.01 mm resolution).</p><p><code>L = ( ⋃ᵢ offset(Cᵢ, −w/2) ) ∩ offset(O, −max(f, w/2))</code>, <code>T = O \\ L</code>, <code>surround = R \\ O</code></p><p>Booleans use Clipper with NonZero fill. Offsets use round joins with 0.1 mm arc tolerance. Clipper's PolyTree recovers which contours are holes, so extrusion keeps islands and voids correct.</p>`,
+live:()=>`This window: ${G.nLights} light${G.nLights===1?'':'s'}, glazing ratio ${(G.glaze*100).toFixed(1)}%, bar ${fmtLen(S.bar)}, frame ${fmtLen(G.fEff)}.`},
+
+{id:'arch-round',t:'Round and segmental arches',
+s:`<p>A round arch is half a circle sitting on top of the opening. A segmental arch is only a slice of a much bigger circle, so it is flatter.</p>`,
+d:`<p>On a round arch the circle is centred on the <b>springing line</b>, where the straight sides end. Its radius is half the span, so the rise is also half the span. For a segmental arch you choose a smaller rise. The flatter you go, the larger the circle becomes. <i>Rise ÷ span</i> in the analysis strip is 0.5 for a round arch and lower for anything flatter.</p>`,
+p:`<p>For half-span h and rise r: <code>R = (h² + r²) / (2r)</code>, centre at (0, r − R), below the springing line. The arc runs from atan2(−c_y, −h) to atan2(−c_y, h). Rise is clamped to [0.02h, 0.999h]. At r = h, R = h and the arc is a semicircle.</p>`,
+live:()=>S.arch==='round'?`Radius = half the span = ${fmtLen(S.span/2)}.`:S.arch==='segmental'?`Rise ${fmtLen(G.op.rise)} on span ${fmtLen(S.span)} gives R = ${fmtLen(G.op.info.radii[0])}, centred ${fmtLen(G.op.info.radii[0]-G.op.rise)} below the springing line.`:'Choose the Round or Segmental head to see your numbers here.'},
+
+{id:'arch-pointed',t:'Pointed arches: drop, equilateral, lancet',
+s:`<p>A pointed arch is two circle arcs leaning together and meeting in a point. Draw the circles bigger and the arch grows tall and sharp. Draw them smaller and it is squat. The special case in between, where each circle is as wide as the opening, is called equilateral.</p>`,
+d:`<p>One control does the work: <b>Radius ÷ span</b> (ρ). At 0.5 both centres sit in the middle and you get a semicircle. At 1.0 each arc is struck from the opposite springing point, so the two springing points and the apex form an equilateral triangle, and the curves meet at 120°. Above 1.0 you get lancets. Below 1.0 you get drop arches.</p>`,
+p:`<p>R = ρ·s with s = 2h. Left arc centre at (R − h, 0). The apex lies on x = 0:</p><p><code>y_a = √(R² − (R − h)²) = √(2Rh − h²)</code></p><p>With θ_a = atan2(y_a, h − R), the interior angle between tangents at the apex is 2π − 2θ_a. For ρ = 1, y_a = h√3 = 0.866 s and the apex angle is 120°. ρ is clamped to ≥ 0.5.</p>`,
+live:()=>S.arch==='pointed'?`Span ${fmtLen(S.span)} × ρ ${S.rho.toFixed(2)} gives R = ${fmtLen(G.op.info.radii[0])}. Each arc's centre lies ${fmtLen(G.op.info.radii[0]-S.span/2)} past the centreline. Apex rise ${fmtLen(G.op.rise)}, apex angle ${G.op.info.apex.toFixed(1)}°.`:'Choose the Pointed head to see your numbers here.'},
+
+{id:'arch-horseshoe',t:'Horseshoe arch',
+s:`<p>Lift the centre of a circle above the springing line and the curve swings out past the sides of the opening before tucking back in at the bottom, like a horseshoe.</p>`,
+d:`<p>The <b>Centre lift</b> control raises the circle's centre. At zero you get a semicircle. The more you lift it, the more of the circle is used, and the stronger the narrowing at the base. The 3D surround is widened to contain the bulge.</p>`,
+p:`<p>Centre (0, k), radius <code>r = √(h² + k²)</code>, so the circle passes through the springing points (±h, 0). Arc sweep is <code>π + 2·atan(k/h)</code>. Maximum width is 2r, greater than the span.</p>`,
+live:()=>S.arch==='horseshoe'?`Centre lifted ${fmtLen(S.stilt*S.span/2)}, radius ${fmtLen(G.op.info.radii[0])}, ${G.op.info.extra}.`:'Choose the Horseshoe head to see your numbers here.'},
+
+{id:'arch-tudor',t:'Four-centred (Tudor) arch',
+s:`<p>This arch uses four arcs: two small tight ones at the corners and two big flat ones that meet in a slight point at the top. It makes a low, wide arch.</p>`,
+d:`<p>Three controls: <b>Rise ÷ span</b>, <b>Corner radius ÷ span</b> and <b>Junction angle</b>. The corner arcs are struck from the springing line and sweep up to the junction angle. There the big arc takes over smoothly, with no kink. The big arc's centre is below the springing line. If the three values cannot make a valid curve the tool shows an equilateral arch and tells you.</p>`,
+p:`<p>Right side: small centre P = (h − r₁, 0), u = (cos φ, sin φ), apex A = (0, rise), D = A − P. The large arc is internally tangent at the junction, so its centre is C = P − t·u with radius r₂ = t + r₁. Putting A on the large circle gives:</p><p><code>t = (r₁² − |D|²) / (2(D·u − r₁))</code></p><p>Valid when t &gt; 0 and the angle of A from C exceeds φ. The left half is the mirror image.</p>`,
+live:()=>S.arch==='tudor'?(G.warn?G.warn:`Corner radius ${fmtLen(G.op.info.radii[0])}, large radius ${fmtLen(G.op.info.radii[1])}, rise ${fmtLen(G.op.rise)}.`):'Choose the Four-centred head to see your numbers here.'},
+
+{id:'arch-ogee',t:'Ogee arch',
+s:`<p>An ogee is an S-shaped curve on each side. It bulges outward near the bottom, curves back in near the top, and the two sides meet in a sharp tip.</p>`,
+d:`<p>Same controls as the four-centred arch. The lower part is a convex arc with its centre inside the opening. At the junction angle it flips to a concave arc whose centre is outside, and that runs up to the tip. It needs a tall rise and a fairly steep junction angle. When the values cannot make an S the tool falls back to an equilateral arch and says so.</p>`,
+p:`<p>Convex arc: centre P = (h − r₁, 0), from angle 0 to φ. Concave arc: centre C = P + s·u with r₂ = s − r₁ (external tangency). Apex on the concave circle gives:</p><p><code>s = (r₁² − |D|²) / (2(r₁ − D·u))</code></p><p>Valid when s &gt; r₁. The concave arc runs from angle φ + π to atan2(A − C) by the shortest signed difference.</p>`,
+live:()=>S.arch==='ogee'?(G.warn?G.warn:`Convex radius ${fmtLen(G.op.info.radii[0])}, concave radius ${fmtLen(G.op.info.radii[1])}, rise ${fmtLen(G.op.rise)}.`):'Choose the Ogee head to see your numbers here.'},
+
+{id:'arch-multifoil',t:'Multifoil and cusped arches',
+s:`<p>Take a plain arch, mark equal steps along it, and draw a small arc between each pair of marks bulging outward. The sharp points where two small arcs meet are called cusps, and they point inward.</p>`,
+d:`<p><b>Radius ÷ span</b> sets the plain arch underneath (0.5 round, 1.0 pointed). <b>Lobes</b> is how many scallops. <b>Lobe depth</b> of 1.0 makes each lobe a semicircle on its chord. Lower values give shallow scallops, higher give more than a semicircle. Three lobes give a trefoil arch. Five to nine give the scalloped arches of Islamic architecture.</p>`,
+p:`<p>The base curve is resampled at N + 1 points equal in arc length. For a chord of half-length c and depth b, the sagitta is σ = b·c:</p><p><code>r = (c² + σ²) / (2σ)</code>, centre = midpoint − (r − σ)·n̂</p><p>where n̂ is the outward normal. Each lobe sweeps 4·atan(b). Arcs are struck clockwise from left to right.</p>`,
+live:()=>S.arch==='multifoil'?`${Math.round(S.lobes)} lobes at depth ${S.bulge.toFixed(2)}: each lobe sweeps ${(4*Math.atan(S.bulge)*180/Math.PI).toFixed(0)}°.`:'Choose the Multifoil head to see your numbers here.'},
+
+{id:'arch-curves',t:'Elliptical, parabolic, catenary and flat heads',
+s:`<p>These heads are not made from circle arcs. They are smooth curves defined by equations. A catenary is the shape of a hanging chain turned upside down. It carries its own weight in pure compression, which is why Gaudí used it.</p>`,
+d:`<p>A <b>semi-ellipse</b> is tight at the springings and flat across the crown when the rise is less than half the span. A <b>parabola</b> is more pointed at the crown. A <b>catenary</b> gets more peaked as the rise increases. A <b>flat lintel</b> has no curve at all.</p>`,
+p:`<p>Ellipse: x = h cos θ, y = r sin θ. Parabola: <code>y = r(1 − x²/h²)</code>. Catenary: <code>y = r − a(cosh(x/a) − 1)</code>, with a found by bisection from r = a(cosh(h/a) − 1).</p><p>The parabola is the funicular for load spread evenly per horizontal metre, the catenary for load spread evenly along the curve. For shallow arches the two are close.</p>`,
+live:()=>['ellipse','parabola','catenary'].includes(S.arch)?`Rise ${fmtLen(G.op.rise)} on span ${fmtLen(S.span)} (rise ÷ span ${(G.op.rise/S.span).toFixed(3)})${G.op.info.extra?'. '+G.op.info.extra:''}.`:'Choose the Elliptical, Parabolic or Catenary head to see your numbers here.'},
+
+{id:'bars',t:'Bars, frames and why cells are shrunk',
+s:`<p>The tool draws each space where glass will go, then shrinks it all around by half a bar. Two neighbouring spaces both shrink, so what is left between them is exactly one bar wide. That keeps the stone an even thickness everywhere.</p>`,
+d:`<p><b>Bar width</b> is the stone between lights. <b>Frame width</b> is the stone at the edge of the opening and is never less than half a bar. If the bars are too wide for the cells, the tool warns that no lights remain. Sharp inside corners of a cell become rounded in the glass, with a radius of half the bar.</p>`,
+p:`<p>Each cell is offset on its own, then the results are clipped:</p><p><code>L = ( ⋃ offset(Cᵢ, −w/2) ) ∩ offset(O, −f_eff)</code>, <code>f_eff = max(f, w/2)</code></p><p>Offsetting the union of cells would merge neighbours and delete the bars between them, so it is never done. Concave cell corners round with radius w/2. Lights with area below (w/2)² are dropped as slivers.</p>`,
+live:()=>`Bar ${fmtLen(S.bar)}: each cell shrinks ${fmtLen(S.bar/2)} per side. Effective frame ${fmtLen(G.fEff)}.`},
+
+{id:'divisions',t:'Dividing a width: uniform, golden, Fibonacci',
+s:`<p>To split an opening into three lights you can make them equal, or make each one bigger than the last by the golden ratio, or follow Fibonacci numbers: 1, 1, 2, 3, 5 and so on.</p>`,
+d:`<p>Each scheme gives relative weights that grow from left to right (or bottom to top for rows). <b>Mirror divisions</b> reflects them so the biggest light is in the middle, which gives a symmetric window. Schemes apply to mullion spacing, geometric sub-lights and grid columns. <b>Row scheme</b> sets grid rows.</p>`,
+p:`<p>Weights wᵢ = φⁱ or Fᵢ (1, 1, 2, 3, 5…), normalised so boundaries are <code>bᵢ = Σ₍ₖ&lt;ᵢ₎ wₖ / Σ wₖ</code>. Golden gives successive lengths in the exact ratio φ = (1 + √5)/2 ≈ 1.618. Fibonacci ratios converge to φ. Mirror mode builds weights for ⌈n/2⌉ divisions and reflects them, sharing the centre when n is odd.</p>`,
+live:()=>{
+  if(!['mullions','geometric','grid'].includes(S.pattern))return 'Choose the Mullioned, Geometric or Grid pattern to see your numbers here.';
+  const n=Math.round(S.pattern==='grid'?S.cols:S.lights);
+  const b=division(n,S.scheme,S.sym,S.span);
+  const lens=diffs(b).map(x=>fmtLen(x*S.span));
+  return `${n} division${n===1?'':'s'} across ${fmtLen(S.span)}: ${lens.join(' · ')}.`;
+}},
+
+{id:'modulor',t:'Modulor Red and Blue series',
+s:`<p>Le Corbusier built a ruler from the golden ratio and the height of a standing person, 183 cm. It has two scales, Red and Blue. Each step is about 1.6 times the last, and any two neighbouring steps add up to the next. TRACERY cuts your opening into pieces using steps from this ruler.</p>`,
+d:`<p>Red runs 4, 6, 10, 16, 27, 43, 70, 113, 183, 296, 479 cm. Blue is double: 8, 13, 20, 33, 53, 86, 140, 226, 366, 592, 958 cm. For n divisions the tool finds the run of n consecutive terms whose total is closest to your opening, then scales it to fit. The <b>scale factor</b> shows how far you are from true Modulor. 1.000 is exact, 1.066 means 6.6% oversize. Choose opening sizes from the Compare menu (113, 183, 226 cm and so on) to get close to 1.</p>`,
+p:`<p>The series are Fibonacci-like, tₖ ≈ t₀φᵏ, rounded to whole centimetres, so additivity tₖ + tₖ₊₁ = tₖ₊₂ holds only approximately (16 + 27 = 43, but 10 + 16 = 26 against 27).</p><p>Fit: for each start index i, <code>S_i = 10·Σ terms</code> (mm). Choose i minimising |S_i − L| / L, then <code>scale = L / S_i</code>. Mirror mode fits ⌈n/2⌉ terms and reflects them. Different axes get different scales.</p>`,
+live:()=>{
+  const g=['mullions','geometric','grid'].includes(S.pattern);
+  if(g&&isMod(S.scheme)){
+    const n=Math.round(S.pattern==='grid'?S.cols:S.lights);
+    const t=modTerms(n,S.scheme==='modRed'?'red':'blue',S.span,S.sym);
+    return `Columns: ${fmtTerms(t.terms,t.scale)}. Fit error before scaling ${(t.err*100).toFixed(1)}%.`;
+  }
+  const all=RED.concat(BLUE).map(v=>v*10);
+  let best=all[0];
+  all.forEach(v=>{if(Math.abs(v-S.span)<Math.abs(best-S.span))best=v;});
+  return `Your span ${fmtLen(S.span)}. Nearest single Modulor value: ${fmtLen(best)}. Choose a Modulor division scheme to see the fit.`;
+}},
+
+{id:'geometric',t:'Geometric tracery: sub-lights and packed circles',
+s:`<p>The opening is divided into smaller arched windows called sub-lights. The leftover space above them is then filled with circles. Each circle is grown until it touches the arch above and the sub-lights below, like blowing bubbles into a gap until they can no longer grow.</p>`,
+d:`<p><b>Lights</b> is how many sub-windows. <b>Sub-light radius ÷ span</b> sets how pointed they are and <b>springing</b> sets how high their curves start. <b>Packed circles</b> is how many circles to place, <b>Smallest circle radius</b> stops tiny ones, and <b>Foil lobes</b> turns each circle into a trefoil, quatrefoil and so on. The biggest circle goes in first, then the next biggest gap is filled.</p>`,
+p:`<p>Free space <code>F = offset(O, −fᵢ) \\ ⋃ sub-cells</code>, with fᵢ = f_eff − w/2. The largest inscribed circle is found on a grid of step max(8, size/90) mm. Each grid point stores its distance to the boundary (even-odd point-in-polygon, point-to-segment distance). The maximum is refined by hill climbing, trying 8 directions and shrinking the step by 0.6 when none improves. Placed circles are subtracted as min(d, |p − c| − r). This repeats for K circles or until r &lt; r_min.</p><p>The method is greedy, not globally optimal. The grid is symmetric about x = 0 and ties pick the left side first.</p>`,
+live:()=>{
+  if(S.pattern!=='geometric')return 'Choose the Geometric pattern to see your numbers here.';
+  const n=G.notes.find(x=>x[0]==='Packed circles');
+  return `${Math.round(S.lights)} sub-lights${n?'. '+n[0]+': '+n[1]:''}.`;
+}},
+
+{id:'foils',t:'Foils and cusps',
+s:`<p>A trefoil is three overlapping circles gathered inside a bigger circle's footprint. The sharp points where two circles overlap are the cusps.</p>`,
+d:`<p><b>Foil lobes</b> is the number of lobes: 3 trefoil, 4 quatrefoil, 5 cinquefoil, 6 sexfoil. TRACERY makes each lobe slightly larger than the exact touching size so neighbours overlap and form real cusps, and fills the centre so the shape is one light.</p>`,
+p:`<p>Lobe radius <code>r_f = R · sin(π/n) / (1 + sin(π/n)) × 1.3</code>, capped at 0.92R. Lobe centres lie at distance R − r_f on angles π/2 + 2πk/n. The foil is the union of the lobe circles and the n-gon through their centres. At factor 1.0 neighbouring lobes only touch, giving zero-width cusps, so 1.3 is used to make the cusps visible.</p>`,
+live:()=>{
+  const n=S.pattern==='geometric'||S.pattern==='rose'?Math.round(S.foilN):0;
+  if(n<3)return 'Set Foil lobes to 3 or more under Tracery to see your numbers here.';
+  const sp=Math.sin(Math.PI/n);
+  return `${n}-lobed foil: each lobe radius = ${Math.min(0.92,sp/(1+sp)*1.3).toFixed(3)} × the circle radius.`;
+}},
+
+{id:'rose',t:'Rose windows',
+s:`<p>A rose window puts a ring of equal circles, the petals, around a central circle. Each petal touches its two neighbours and the outer frame. The more petals there are, the smaller each one gets.</p>`,
+d:`<p><b>Petals</b> is how many around the ring. <b>Plate</b> style uses circles or foils. <b>Wheel</b> style uses radial spokes with a small hub. <b>Packed circles</b> fills the gaps between the petals and the frame. If the opening is not circular, the rose is placed in the largest circle that fits inside it.</p>`,
+p:`<p>n equal circles tangent to each other and to an outer circle of radius R:</p><p><code>r_p = R · sin(π/n) / (1 + sin(π/n))</code>, centres at d = R − r_p, hub radius <code>R_h = d − r_p = R − 2r_p</code></p><p>The hub is tangent to all petals and is omitted below 8 mm. Wheel style cuts n sectors between angles 2πk/n with an inner arc at 0.2R. For non-circular openings R comes from the inscribed-circle search described under geometric tracery.</p>`,
+live:()=>{
+  if(S.pattern!=='rose')return 'Choose the Rose pattern to see your numbers here.';
+  if(S.roseStyle==='wheel')return `${Math.round(S.petals)} spokes with a hub of 0.20 × the rose radius.`;
+  const n=Math.round(S.petals),sp=Math.sin(Math.PI/n),rp=sp/(1+sp);
+  return `${n} petals: petal radius = ${rp.toFixed(3)} × R, hub radius = ${(1-2*rp).toFixed(3)} × R.`;
+}},
+
+{id:'mondrian',t:'The Mondrian composition generator',
+s:`<p>It starts with one big rectangle and keeps cutting one of the rectangles into two, at simple positions like a third or two fifths. It never cuts exactly in half, so the result does not look symmetrical. A few of the fields are then coloured red, blue and yellow, and the bars are black. The same seed always gives the same picture.</p>`,
+d:`<p><b>Splits</b> is how many cuts are made. <b>Composition seed</b> picks the composition. Large fields tend to stay white, red goes on a larger field, blue and yellow on smaller ones, and black appears occasionally. A minimum field size prevents slivers. It is a study in Mondrian's manner, not a copy of a painting.</p>`,
+p:`<p>Seeded mulberry32. Each step picks a rectangle with probability proportional to area^1.5 from those with a side ≥ 2.2·minD, where minD is 9% of the smaller overall dimension. The cut runs across the longer side when the aspect ratio exceeds 1.25 (random otherwise), at a fraction from {1/4, 1/3, 2/5, 3/5, 2/3, 3/4}, retrying up to 8 times if a part would be smaller than minD.</p><p>Colours are assigned by area rank: red from the 50th to 95th percentile, blue 10th to 60th, yellow 0 to 50th, and black (60% chance when there are at least 8 fields) 0 to 35th. A guillotine partition has only T-junctions.</p>`,
+live:()=>{
+  if(S.pattern==='mondrian'){const n=G.notes.find(x=>x[0]==='Composition');return `${Math.round(S.mondSplits)} splits: ${n?n[1]:''}.`;}
+  const m=mondrianBuild(S.span,S.height,S.mondSeed,Math.round(S.mondSplits));
+  return `With the current span, height, ${Math.round(S.mondSplits)} splits and seed ${Math.round(S.mondSeed)} the generator would make ${m.rects.length} fields. Choose the Mondrian pattern to see it.`;
+}},
+
+{id:'lattice',t:'Lattices, jali and tilings',
+s:`<p>Fill the opening with a repeating tile: squares, hexagons, octagons with little squares between them, or stars. The tool then cuts the tiling to the shape of your window.</p>`,
+d:`<p><b>Pitch</b> is the tile size and <b>Rotation</b> turns the whole pattern. <b>Star points</b> and <b>Star depth</b> shape the star, and <b>Diamond lights</b> adds small lights between stars. Tiles cut by the edge of the opening become partial lights, and tiny slivers are dropped. A smaller pitch gives more lights. If the tiling would pass about 420 tiles the pitch is enlarged.</p>`,
+p:`<p>Square: side p. Hexagon (pointy-top): circumradius <code>p/√3</code>, rows 1.5R apart, odd rows offset p/2. Octagon plus square (4.8.8): octagons of circumradius <code>p / (2cos 22.5°)</code> at lattice points, diamonds of edge <code>a = p/(1 + √2)</code> and circumradius a/√2 at (p/2, p/2). Star: outer radius p/2 (0.96·p/2 unless n is a multiple of 4), inner radius = depth × outer, so tips touch when n is divisible by 4. The lattice is rotated about the window centre.</p>`,
+live:()=>{
+  if(S.pattern!=='lattice')return 'Choose the Lattice pattern to see your numbers here.';
+  const a=G.notes.find(x=>x[0]==='Lattice pitch'),b=G.notes.find(x=>x[0]==='Cells');
+  return `Pitch used ${a?a[1]:''}, ${b?b[1]:''} tiles before clipping.`;
+}},
+
+{id:'build3d',t:'How the 3D model is built',
+s:`<p>The flat shapes are pushed out into thickness. The wall around the opening is one slab. The stone bars sit behind the face of the wall, and thin coloured glass sits in the middle of the bars. Chamfer softens the edges.</p>`,
+d:`<p>Set <b>Wall thickness</b>, <b>Tracery depth</b> and <b>Setback</b> to model a deep reveal. <b>Explode layers</b> slides the wall forward and the glass back so you can see each part. <b>Sun azimuth and elevation</b> light the scene and cast shadows from the tracery onto the glass. The glass receives shadows but does not cast them. <b>Colour fills</b> choose stained tints, Mondrian colours or Corbusier polychromy.</p>`,
+p:`<p>Surround: extrude(R \\ O, D_w) from z = −D_w to 0. Tracery: extrude(T, D_t) starting at z = −setback − D_t. Glass: a slab of thickness <code>g = clamp(0.12·D_t, 8, 24)</code> mm centred in the tracery depth.</p><p>Chamfer b uses bevelThickness = bevelSize = b and bevelOffset = −b, so the profile stays at nominal size and the extrusion depth drops by 2b. For tracery b is limited to 0.45 × (w/2) so narrow bars keep a flat face, and to D/2.5. Hole nesting comes from Clipper's PolyTree and triangulation uses earcut.</p>`,
+live:()=>`Wall ${fmtLen(S.wallDepth)}, tracery ${fmtLen(S.tracDepth)} set back ${fmtLen(S.setback)}, glass ${fmtLen(Math.max(8,Math.min(24,S.tracDepth*0.12)))} thick, chamfer ${fmtLen(Math.min(S.chamfer,G.hw*0.45))} on the tracery.`},
+
+{id:'glazing',t:'Glazing ratio',
+s:`<p>This is how much of the opening is glass and how much is stone, as a percentage.</p>`,
+d:`<p>It drops with thick bars, small cells and jali screens, and rises with plain lights. Glazed fraction is one input to daylight and heat gain, along with glass type and orientation. It is a quick way to compare two tracery designs.</p>`,
+p:`<p><code>ratio = A(L) / A(O)</code>. Areas are Clipper's signed polygon areas, where holes subtract, taken in integer units and divided by 100² to give mm². It is measured against the opening, not the whole wall, and ignores glazing rebates.</p>`,
+live:()=>`${(G.glaze*100).toFixed(1)}% glass, ${(100-G.glaze*100).toFixed(1)}% stone.`},
+
+{id:'compare',t:'The Compare measures',
+s:`<p>Compare puts a Modulor grid and a Mondrian composition on the same opening and measures how each one uses proportion. Modulor uses one ruler with golden-ratio steps. Mondrian balances shapes by eye, with no fixed ratio. The table shows that difference in numbers.</p>`,
+d:`<p>Read the table in rows. <b>Neighbour ratio</b> and <b>Deviation from φ</b> show how close adjacent divisions are to the golden ratio. <b>Additive lengths</b> count lengths that equal the sum of two smaller ones. <b>Cells at φᵏ aspect</b> and <b>simple rational aspect</b> compare golden-ratio shapes with shapes like 2:1 or 3:2. <b>Mirror-symmetric lines</b>, <b>golden sections</b> and <b>Junctions</b> describe layout. The <b>overlay</b> shows where the two systems' lines nearly coincide. <b>Colour</b> reports coverage and how far the coloured mass sits from the centre.</p>`,
+p:`<p>Distinct lengths: division lengths clustered within 3%. Neighbour ratio: max/min of adjacent divisions along each axis, averaged; deviation is mean |r − φ| / φ. Additive: among the distinct lengths in ascending order, excluding the two smallest, the share equal to a sum of two smaller ones within 4%. Aspect: max/min cell side compared with φᵏ (k = 1 to 4) or {1, 5:4, 4:3, 3:2, 2, 5:2, 3, 4}, each within 5%. Modulor cells use nominal series values because the per-axis fit scale would otherwise distort ratios.</p><p>Mirror: interior lines with a partner at L − x within 1.5% of L. Golden: within 2% of 0.382L or 0.618L. Junctions: a crossing needs both lines to pass through the other's interior, a T needs one end on the other, with tolerance 0.3% of the larger dimension. Colour: area-weighted centroid of coloured cells, offset from the window centre as a percentage of the diagonal. Overlay: a Mondrian segment is coincident if within 2% of the dimension of an interior Modulor line on the same axis.</p>`,
+live:()=>{
+  const m=cmpBuild(),a=cmpMetrics(m.mod),b=cmpMetrics(m.mond);
+  return `Right now: Modulor neighbour ratio ${fmtNum(a.meanRatio)} : 1 (${fmtPct(a.phiDev,1)} from φ), Mondrian ${fmtNum(b.meanRatio)} : 1 (${fmtPct(b.phiDev,1)} from φ).`;
+}},
+
+{id:'units',t:'Units and rounding',
+s:`<p>You can show every length in millimetres or in feet and inches. Switching changes only how numbers are written, never the window.</p>`,
+d:`<p>Sliders still move in millimetre steps, about 0.4 inch each, even in imperial mode. SVG export is always in millimetres. Modulor series values are defined in centimetres, so imperial mode shows them in inches.</p>`,
+p:`<p>All geometry is held in millimetres. Imperial display rounds to the nearest 1/16 inch below 24 inches and 1/8 inch above, reduces fractions (5/16″, not 10/32″) and writes exact feet without inches (10′). Modulor terms in imperial are cm ÷ 2.54 to one decimal.</p>`,
+live:()=>`Your span is ${Math.round(S.span)} mm = ${fmtImp(S.span)}.`}
+];
+
+function helpTopicFor(sec){
+  if(sec==='open'){
+    const m={round:'arch-round',segmental:'arch-round',horseshoe:'arch-horseshoe',pointed:'arch-pointed',tudor:'arch-tudor',ogee:'arch-ogee',multifoil:'arch-multifoil',ellipse:'arch-curves',parabola:'arch-curves',catenary:'arch-curves',flat:'arch-curves',circle:'rose'};
+    return m[S.arch]||'pipeline';
+  }
+  if(sec==='trac'){
+    const m={plain:'pipeline',mullions:'divisions',geometric:'geometric',rose:'rose',grid:'divisions',mondrian:'mondrian',lattice:'lattice'};
+    return m[S.pattern]||'pipeline';
+  }
+  if(sec==='bars')return 'bars';
+  if(sec==='three')return 'build3d';
+  return 'pipeline';
+}
+
+function helpPlain(html){return html.replace(/<[^>]*>/g,' ').replace(/&[a-z]+;/g,' ').toLowerCase();}
+
+function helpLiveHtml(t){
+  let txt='';
+  try{txt=t.live?t.live():'';}catch(e){txt='';}
+  if(!txt)return '';
+  const off=/^(Choose|Set) /.test(txt);
+  return `<div class="live${off?' off':''}"><b>${off?'Try it':'Your window'}</b>${escapeHtml(txt)}</div>`;
+}
+
+function renderHelp(){
+  const nav=document.getElementById('helpNav'),box=document.getElementById('helpContent');
+  nav.innerHTML=HELP_TABS.map(t=>`<button data-tab="${escapeAttr(t[0])}" class="${helpState.tab===t[0]?'on':''}">${escapeHtml(t[1])}</button>`).join('');
+  const tab=helpState.tab;
+  let h='';
+  const dl=(rows)=>'<dl>'+rows.map(r=>`<div class="item" data-s="${escapeAttr(helpPlain(r[0]+' '+r[1]))}"><dt>${escapeHtml(r[0])}</dt><dd>${escapeHtml(r[1])}</dd></div>`).join('')+'</dl>';
+  if(tab==='start'){
+    h=`<div class="item" data-s="${escapeAttr(helpPlain(HELP_START))}">${HELP_START}</div>`;
+  }else if(tab==='controls'){
+    HELP_CONTROLS.forEach(g=>{h+=`<section class="grp"><h2>${escapeHtml(g[0])}</h2>${dl(g[1])}</section>`;});
+  }else if(tab==='math'){
+    h='<div class="lvlbar">'+HELP_LEVELS.map(l=>`<button data-lvl="${escapeAttr(l[0])}" class="${helpState.level===l[0]?'on':''}">${escapeHtml(l[1])}</button>`).join('')+'</div>';
+    h+='<p class="lvlnote">'+({s:'Plain language and pictures in words.',d:'The vocabulary and controls you would use in practice.',p:'Equations, tolerances and algorithms.'})[helpState.level]+'</p>';
+    HELP_TOPICS.forEach(t=>{
+      const all=helpPlain(t.t+' '+t.s+' '+t.d+' '+t.p);
+      h+=`<article class="item topic" id="help-topic-${escapeAttr(t.id)}" data-s="${escapeAttr(all)}"><h2>${escapeHtml(t.t)}</h2>${t[helpState.level]}${helpLiveHtml(t)}</article>`;
+    });
+  }else if(tab==='numbers'){
+    h='<h2>The analysis strip</h2><p>The strip under the two views reports these values for the window on screen. Which ones appear depends on the head and pattern.</p><section class="grp">'+dl(HELP_NUMBERS)+'</section>';
+  }else if(tab==='glossary'){
+    h='<h2>Glossary</h2><section class="grp">'+dl(HELP_GLOSSARY)+'</section>';
+  }else{
+    h='<h2>What TRACERY does not do</h2><ul>'+HELP_LIMITS.map(x=>`<li class="item" data-s="${escapeAttr(helpPlain(x))}">${escapeHtml(x)}</li>`).join('')+'</ul>';
+  }
+  box.innerHTML=h;
+  helpFilter();
+}
+
+function helpFilter(){
+  const q=helpState.q.trim().toLowerCase();
+  const box=document.getElementById('helpContent');
+  box.querySelectorAll('.item').forEach(el=>{el.hidden=!!q&&el.getAttribute('data-s').indexOf(q)<0;});
+  box.querySelectorAll('.grp').forEach(g=>{g.hidden=!!q&&!g.querySelector('.item:not([hidden])');});
+}
+
+function openHelp(tab,topic){
+  if(tab)helpState.tab=tab;
+  helpState.q='';
+  document.getElementById('helpSearch').value='';
+  document.getElementById('help').hidden=false;
+  renderHelp();
+  const box=document.getElementById('helpContent');
+  box.scrollTop=0;
+  if(topic){
+    const el=document.getElementById('help-topic-'+topic);
+    if(el){
+      el.scrollIntoView({block:'start'});
+      el.classList.add('flash');
+      setTimeout(()=>el.classList.remove('flash'),1600);
+    }
+  }
+}
+function closeHelp(){
+  document.getElementById('help').hidden=true;
+}
+
+function helpInit(){
+  try{
+    const l=localStorage.getItem(HELP_LVL_KEY);
+    if(l==='s'||l==='d'||l==='p')helpState.level=l;
+  }catch(e){}
+  const el=document.getElementById('help');
+  el.addEventListener('click',e=>{
+    const tb=e.target.closest('[data-tab]');
+    if(tb){
+      helpState.tab=tb.getAttribute('data-tab');
+      renderHelp();
+      document.getElementById('helpContent').scrollTop=0;
+      return;
+    }
+    const lb=e.target.closest('[data-lvl]');
+    if(lb){
+      helpState.level=lb.getAttribute('data-lvl');
+      try{localStorage.setItem(HELP_LVL_KEY,helpState.level);}catch(err){}
+      const box=document.getElementById('helpContent');
+      const y=box.scrollTop;
+      renderHelp();
+      box.scrollTop=y;
+    }
+  });
+  document.getElementById('helpSearch').addEventListener('input',e=>{helpState.q=e.target.value;helpFilter();});
+  document.getElementById('helpClose').addEventListener('click',closeHelp);
+  document.getElementById('btnHelp').addEventListener('click',()=>openHelp('start'));
+  document.getElementById('cmHelp').addEventListener('click',()=>openHelp('math','compare'));
+  document.getElementById('blockHelp').addEventListener('click',()=>openHelp('start'));
+  document.getElementById('side').addEventListener('click',e=>{
+    const b=e.target.closest('.info');
+    if(!b)return;
+    e.preventDefault();
+    e.stopPropagation();
+    openHelp('math',helpTopicFor(b.getAttribute('data-help')));
+  });
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='Escape')return;
+    if(!document.getElementById('help').hidden)closeHelp();
+    else if(!document.getElementById('cmp').hidden)cmpClose();
+  });
+}
+
+function fmtVal(p,v){
+  if(p.k==='foilN'||p.k==='subFoils')return v<3?'none':String(v);
+  if(p.u==='mm')return fmtLen(v);
+  const dec=p.step<0.1?2:p.step<1?1:0;
+  return Number(v).toFixed(dec)+(p.u?' '+p.u:'');
+}
+
+function buildControls(){
+  const side=document.getElementById('side');
+  let html='';
+  SECTIONS.forEach(sec=>{
+    html+=`<details class="sec" open><summary><span>${escapeHtml(sec.title)}</span><button class="info" data-help="${escapeAttr(sec.id)}" title="How this works">?</button></summary><div class="rows">`;
+    sec.p.forEach(p=>{
+      if(p.t==='range'){
+        html+=`<div class="row" data-k="${escapeAttr(p.k)}"><label for="c_${escapeAttr(p.k)}">${escapeHtml(p.l)}</label><span class="val" id="v_${escapeAttr(p.k)}"></span><input id="c_${escapeAttr(p.k)}" type="range" min="${p.min}" max="${p.max}" step="${p.step}"></div>`;
+      }else if(p.t==='select'){
+        html+=`<div class="row" data-k="${escapeAttr(p.k)}"><label for="c_${escapeAttr(p.k)}">${escapeHtml(p.l)}</label><select id="c_${escapeAttr(p.k)}">${p.o.map(o=>`<option value="${escapeAttr(o[0])}">${escapeHtml(o[1])}</option>`).join('')}</select></div>`;
+      }else{
+        html+=`<div class="row chk" data-k="${escapeAttr(p.k)}"><label><input id="c_${escapeAttr(p.k)}" type="checkbox"> ${escapeHtml(p.l)}</label></div>`;
+      }
+    });
+    html+='</div></details>';
+  });
+  side.innerHTML=html;
+  side.addEventListener('input',onControl);
+  side.addEventListener('change',onControl);
+}
+
+function findParam(k){
+  for(const sec of SECTIONS)for(const p of sec.p)if(p.k===k)return p;
+  return null;
+}
+
+function onControl(e){
+  const id=e.target.id||'';
+  if(id.indexOf('c_')!==0)return;
+  const k=id.slice(2);
+  const p=findParam(k);
+  if(!p)return;
+  if(p.t==='range')S[k]=parseFloat(e.target.value);
+  else if(p.t==='check')S[k]=e.target.checked;
+  else S[k]=e.target.value;
+  if(k==='arch'&&ARCH_DEFAULTS[S.arch])Object.assign(S,ARCH_DEFAULTS[S.arch]);
+  if(k==='arch'||k==='pattern'||k==='roseStyle'||k==='latCell'||k==='warp'||k==='subFoils'){syncControls();}
+  else{
+    const vv=document.getElementById('v_'+k);
+    if(vv)vv.textContent=fmtVal(p,S[k]);
+  }
+  if(k==='arch'||k==='span'||k==='height')view.fit=true;
+  saveState();
+  schedule(!!p.g);
+}
+
+function syncControls(){
+  SECTIONS.forEach(sec=>sec.p.forEach(p=>{
+    const el=document.getElementById('c_'+p.k);
+    if(!el)return;
+    if(p.t==='check')el.checked=!!S[p.k];
+    else el.value=S[p.k];
+    const vv=document.getElementById('v_'+p.k);
+    if(vv)vv.textContent=fmtVal(p,S[p.k]);
+    const row=el.closest('.row');
+    if(row)row.hidden=p.show?!p.show(S):false;
+  }));
+  ['lyStone','lyGlass','lyCons','lyDims'].forEach(k=>{
+    const el=document.getElementById('ly_'+k);
+    if(el)el.checked=!!S[k];
+  });
+}
+
+function saveState(){
+  try{localStorage.setItem(STORE_KEY,JSON.stringify(S));}catch(e){}
+}
+function loadState(){
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(raw){
+      const o=JSON.parse(raw);
+      S=Object.assign({},DEFAULT,o);
+      if(S.scheme==='modulor')S.scheme='modBlue';
+      if(S.rowScheme==='modulor')S.rowScheme='modBlue';
+    }
+  }catch(e){}
+}
+
+function applyPreset(i){
+  S=Object.assign({},DEFAULT,PRESETS[i].s);
+  view.fit=true;
+  needCam=true;
+  syncControls();
+  saveState();
+  schedule(true);
+}
+
+function applyTheme(t){
+  if(t==='light')document.documentElement.setAttribute('data-theme','light');
+  else document.documentElement.removeAttribute('data-theme');
+  document.getElementById('btnTheme').textContent=t==='light'?'Dark':'Light';
+  document.getElementById('themeColorMeta').setAttribute('content',t==='light'?'#F4F1EA':'#0E1220');
+  dirty2d=true;
+}
+function applyUnits(u){
+  UNITS=u==='imperial'?'imperial':'metric';
+  document.getElementById('btnUnits').textContent=UNITS==='imperial'?'Metric':'Imperial';
+}
+function toggleUnits(){
+  applyUnits(UNITS==='imperial'?'metric':'imperial');
+  try{localStorage.setItem(UNITS_KEY,UNITS);}catch(e){}
+  cmpFillDims();
+  cmpSyncControls();
+  syncControls();
+  schedule(true);
+  cmpUpdate();
+  toast(UNITS==='imperial'?'Imperial — feet and inches':'Metric — millimetres');
+}
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')==='light'?'light':'dark';
+  const next=cur==='light'?'dark':'light';
+  applyTheme(next);
+  try{localStorage.setItem(THEME_KEY,next);}catch(e){}
+}
+
+function exportSvg(){
+  if(!G)return;
+  const R=G.rect;
+  const pd=paths=>paths.map(p=>'M'+p.map(q=>(q.X/SC).toFixed(1)+' '+(q.Y/SC).toFixed(1)).join('L')+'Z').join('');
+  let svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${R.x0} ${-R.y1} ${R.x1-R.x0} ${R.y1-R.y0}" width="${(R.x1-R.x0)/2}" height="${(R.y1-R.y0)/2}"><g transform="scale(1,-1)" fill="none" stroke="#111" stroke-width="2">`;
+  svg+=`<rect x="${R.x0}" y="${R.y0}" width="${R.x1-R.x0}" height="${R.y1-R.y0}" stroke-width="1"/>`;
+  svg+=`<path d="${pd(G.op.O)}" stroke-width="3"/>`;
+  svg+=`<path d="${pd(G.lights)}" fill-rule="evenodd" fill="#cfe0ff"/>`;
+  if(S.lyCons){
+    svg+='<g stroke="#7C5CFC" stroke-width="1" stroke-dasharray="6 5">';
+    G.cons.forEach(o=>{
+      if(o.k==='c')svg+=`<circle cx="${o.cx.toFixed(1)}" cy="${o.cy.toFixed(1)}" r="${o.r.toFixed(1)}"/>`;
+      else if(o.k==='l')svg+=`<line x1="${o.x0.toFixed(1)}" y1="${o.y0.toFixed(1)}" x2="${o.x1.toFixed(1)}" y2="${o.y1.toFixed(1)}"/>`;
+    });
+    svg+='</g>';
+  }
+  svg+='</g></svg>';
+  const blob=new Blob([svg],{type:'image/svg+xml'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='tracery-window.svg';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+  toast('SVG exported in millimetres');
+}
+
+function checkBlock(){
+  blocked=window.innerWidth<760;
+  document.getElementById('block').style.display=blocked?'flex':'none';
+  if(!blocked){dirty2d=true;resize3D();}
+}
+
+function setupPointer(){
+  let drag=null;
+  cv2d.addEventListener('pointerdown',e=>{
+    drag={x:e.clientX,y:e.clientY};
+    cv2d.setPointerCapture(e.pointerId);
+  });
+  cv2d.addEventListener('pointermove',e=>{
+    if(!drag)return;
+    view.fit=false;
+    view.x+=e.clientX-drag.x;
+    view.y+=e.clientY-drag.y;
+    drag={x:e.clientX,y:e.clientY};
+    dirty2d=true;
+  });
+  const end=e=>{drag=null;try{cv2d.releasePointerCapture(e.pointerId);}catch(err){}};
+  cv2d.addEventListener('pointerup',end);
+  cv2d.addEventListener('pointercancel',end);
+  cv2d.addEventListener('dblclick',()=>{view.fit=true;dirty2d=true;});
+  cv2d.addEventListener('wheel',e=>{
+    e.preventDefault();
+    view.fit=false;
+    const r=cv2d.getBoundingClientRect();
+    const mx=e.clientX-r.left-r.width/2,my=e.clientY-r.top-r.height/2;
+    const f=Math.exp(-e.deltaY*0.0015);
+    view.k*=f;
+    view.x=mx-(mx-view.x)*f;
+    view.y=my-(my-view.y)*f;
+    dirty2d=true;
+  },{passive:false});
+}
+
+function initUi(){
+  const sel=document.getElementById('presetSel');
+  sel.innerHTML='<option value="">Presets…</option>'+PRESETS.map((p,i)=>`<option value="${i}">${escapeHtml(p.n)}</option>`).join('');
+  sel.addEventListener('change',()=>{
+    if(sel.value==='')return;
+    applyPreset(parseInt(sel.value,10));
+    sel.value='';
+  });
+  document.getElementById('btnSeed').addEventListener('click',()=>{
+    S.seed=1+Math.floor(Math.random()*998);
+    syncControls();saveState();schedule(true);
+    toast('Seed '+S.seed);
+  });
+  document.getElementById('btnSvg').addEventListener('click',exportSvg);
+  document.getElementById('btnReset').addEventListener('click',async()=>{
+    const ok=await confirmDialog('Reset every parameter to its default?','Reset');
+    if(!ok)return;
+    S=Object.assign({},DEFAULT);
+    view.fit=true;needCam=true;
+    syncControls();saveState();schedule(true);
+    toast('Reset to defaults');
+  });
+  document.getElementById('btnTheme').addEventListener('click',toggleTheme);
+  document.getElementById('btnUnits').addEventListener('click',toggleUnits);
+  document.getElementById('btnFit').addEventListener('click',()=>{view.fit=true;dirty2d=true;});
+  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.getAttribute('data-view'))));
+  ['lyStone','lyGlass','lyCons','lyDims'].forEach(k=>{
+    document.getElementById('ly_'+k).addEventListener('change',e=>{S[k]=e.target.checked;saveState();dirty2d=true;});
+  });
+  const foot=document.getElementById('footVersion');
+  foot.innerHTML=`<a href="https://axisbim.io" target="_blank" rel="noopener">${escapeHtml(`TRACERY · v${APP_VERSION} · Joe.K · axisbim.io`)}</a>`;
+}
+
+function start(){
+  loadState();
+  let theme='dark';
+  try{theme=localStorage.getItem(THEME_KEY)||'dark';}catch(e){}
+  applyTheme(theme);
+  let units='metric';
+  try{units=localStorage.getItem(UNITS_KEY)||'metric';}catch(e){}
+  applyUnits(units);
+  buildControls();
+  initUi();
+  syncControls();
+  setupPointer();
+  cmpInit();
+  helpInit();
+  init3D();
+  checkBlock();
+  window.addEventListener('resize',()=>{checkBlock();resize3D();dirty2d=true;});
+  if(window.ResizeObserver){
+    new ResizeObserver(()=>{resize3D();dirty2d=true;}).observe(stage2d);
+    new ResizeObserver(()=>{resize3D();}).observe(stage3d);
+  }
+  schedule(true);
+  requestAnimationFrame(loop);
+}
+start();
+</script>
+</body>
+</html>
