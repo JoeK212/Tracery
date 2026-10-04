@@ -195,7 +195,7 @@ footer a:hover{color:var(--accent)}
     <button id="btnShuffle" class="pri" title="New variation of this head and pattern">Shuffle</button>
     <button id="btnShuffleAll" title="New head and pattern as well">Shuffle all</button>
     <button id="btnBack" title="Back to the design before the last shuffle" disabled>Back</button>
-    <select id="exportSel" aria-label="Export" title="Export the window"><option value="">Export…</option><option value="svg">SVG — 2D linework</option><option value="dxf2d">DXF — 2D elevation</option><option value="dxf3d">DXF — 3D model</option><option value="share">Copy share link</option></select>
+    <select id="exportSel" aria-label="Export" title="Export the window"><option value="">Export…</option><option value="svg">SVG — 2D linework</option><option value="dxf2d">DXF — 2D elevation</option><option value="dxf3d">DXF — 3D model</option><option value="stl">STL — 3D model…</option><option value="share">Copy share link</option></select>
     <button id="btnReset">Reset</button>
     <button id="btnUnits" title="Switch between millimetres and feet-inches">Imperial</button>
     <button id="btnTheme">Light</button>
@@ -246,13 +246,13 @@ footer a:hover{color:var(--accent)}
 </div>
 <div class="toast" id="toast"></div>
 <input type="file" id="importFile" accept=".json,application/json" hidden>
-<div class="modal" id="modal" hidden><div class="box"><p id="modalMsg"></p><input type="text" id="modalInput" maxlength="60" autocomplete="off" hidden><select id="modalSelect" hidden></select><div class="acts"><button id="modalNo">Cancel</button><button class="pri" id="modalYes">OK</button></div></div></div>
+<div class="modal" id="modal" hidden><div class="box"><p id="modalMsg"></p><select id="modalSelect" hidden></select><input type="text" id="modalInput" maxlength="60" autocomplete="off" hidden><div class="acts"><button id="modalNo">Cancel</button><button class="pri" id="modalYes">OK</button></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-const APP_VERSION='1.11.0';
+const APP_VERSION='1.12.0';
 const SC=100;
 const TAU=Math.PI*2;
 const PHI=(1+Math.sqrt(5))/2;
@@ -2041,7 +2041,7 @@ const HELP_CONTROLS=[
 ['Shuffle','Makes a new variation of the current head and pattern: proportions, number of lights, bar width and seeds change within sensible ranges. The size, units and 3D settings stay. Variations that cannot be drawn, or that leave almost no glass or almost no stone, are discarded and another is tried. Press it repeatedly to see many quick samples.'],
 ['Shuffle all','As Shuffle, but also picks a new head and a new pattern and varies the height by up to about 10%.'],
 ['Back','Steps back to the design before the last shuffle, up to 20 steps. Presets and manual changes are not recorded, so Back only returns to designs a shuffle replaced.'],
-['Export','SVG: 2D linework in millimetres. DXF 2D elevation: the opening, wall, tracery and glass outlines plus the construction circles and lines, on separate layers. DXF 3D model: the wall, tracery and glass as triangle meshes. DXF files follow the Metric or Imperial setting and are written in millimetres or inches. Copy share link puts the current design into a web address that anyone can open.'],
+['Export','SVG: 2D linework in millimetres. DXF 2D elevation: the opening, wall, tracery and glass outlines plus the construction circles and lines, on separate layers. DXF 3D model: the wall, tracery and glass as triangle meshes. DXF files follow the Metric or Imperial setting and are written in millimetres or inches. STL: the 3D model as a triangle mesh for 3D printing, Blender and Rhino, with a choice of parts, orientation and scale. Copy share link puts the current design into a web address that anyone can open.'],
 ['Reset','Returns every setting to its default after asking you to confirm.'],
 ['Imperial / Metric','Switches every displayed length between feet-inches and millimetres. The window itself does not change.'],
 ['Light / Dark','Switches the colour theme.']]],
@@ -2173,7 +2173,8 @@ const HELP_LIMITS=[
 'The CNC check looks at the flat 2D outline only. It does not know about cutter path order, tool length, stepover, the grain or cracking of the stone, or how the piece is held.',
 'Share links carry the design settings only. They do not carry your units, theme, saved designs, or the section cut, exploded layers and wireframe. Links over about 2,000 characters may be cut off by some chat apps.',
 '3D glass is a simple translucent slab. Colours are illustrative, not a daylight or colour-rendering simulation.',
-'DXF export is the older AutoCAD R12 format so that nearly any CAD program opens it. Curves are polylines of short straight segments (about 4° of arc), except construction circles, which are true circles. The 3D file is a triangle mesh on three layers, not solids, and individual glass colours are not carried across. It always exports the complete model, ignoring the section cut and exploded layers.'
+'DXF export is the older AutoCAD R12 format so that nearly any CAD program opens it. Curves are polylines of short straight segments (about 4° of arc), except construction circles, which are true circles. The 3D file is a triangle mesh on three layers, not solids, and individual glass colours are not carried across. It always exports the complete model, ignoring the section cut and exploded layers.',
+'STL files have no units, so sizes are written in millimetres whatever the display is set to, and the scale you choose is applied to every coordinate. The stone and each glass pane are separate closed shells that touch but do not overlap. The tracery sits behind the wall face, so printing the whole window needs supports unless the setback is small.'
 ];
 
 const HELP_TOPICS=[
@@ -2352,10 +2353,11 @@ live:()=>{
   return `Cutter ${fmtLenEdit(c.D)}, web ${fmtLenEdit(c.web)}: ${c.small} light${c.small===1?'':'s'} too small, ${c.deepN} tight point${c.deepN===1?'':'s'} or slot${c.deepN===1?'':'s'}, ${c.thinN} thin place${c.thinN===1?'':'s'}.`;
 }},
 
-{id:'export',t:'Exporting: SVG and DXF',
-s:`<p>Exporting saves your window as a drawing or a model that other programs can open. SVG and the 2D DXF are flat drawings. The 3D DXF is a model made of many small flat triangles.</p>`,
-d:`<p>SVG is always in millimetres. DXF files follow the Metric or Imperial setting and are written in millimetres or inches, and the file name ends -mm or -in. Set the units in your CAD import dialog, because the older format used cannot store them.</p><p>The <b>2D DXF</b> has five layers: OPENING, WALL, TRACERY (the stone profile with the glass cut out, useful for CNC or laser cutting), GLASS, and CONSTRUCTION (dashed compass circles, radii and centres). The <b>3D DXF</b> has WALL, TRACERY and GLASS. Glass colours are not exported, and the 3D file always holds the whole model, ignoring the section cut and exploded layers.</p>`,
-p:`<p>Format: AutoCAD R12 ASCII (AC1009) with LTYPE and LAYER tables. Closed outlines are POLYLINE, VERTEX and SEQEND. Construction items are CIRCLE, LINE and POINT, and meshes are 3DFACE with the fourth corner repeating the third. R12 was chosen because nearly every CAD, CAM and BIM tool reads it.</p><p>Outlines are the polygons the app computes, about 4° of arc per segment, so a construction circle is exact and a head is a polyline. Coordinates are written to 4 decimals in millimetres or 6 in inches.</p><p>3D axes: the viewer's (x, y, z) become DXF <code>(x, −z, y)</code>, a pure rotation, so X is across, Y runs into the wall from the front face (Y = 0) and Z is up. Triangles come from the same extrusion and chamfer code as the 3D view.</p>`,
+{id:'export',t:'Exporting: SVG, DXF and STL',
+s:`<p>Exporting saves your window as a drawing or a model that other programs can open. SVG and the 2D DXF are flat drawings. The 3D DXF and the STL are models made of many small flat triangles.</p>`,
+d:`<p>SVG is always in millimetres. DXF files follow the Metric or Imperial setting and are written in millimetres or inches, and the file name ends -mm or -in. Set the units in your CAD import dialog, because the older format used cannot store them.</p><p>The <b>2D DXF</b> has five layers: OPENING, WALL, TRACERY (the stone profile with the glass cut out, useful for CNC or laser cutting), GLASS, and CONSTRUCTION (dashed compass circles, radii and centres). The <b>3D DXF</b> has WALL, TRACERY and GLASS. Glass colours are not exported, and the 3D file always holds the whole model, ignoring the section cut and exploded layers.</p><p><b>STL</b> is for 3D printing, Blender and Rhino. A small dialog asks what to include (stone and glass, stone only, or glass only), how to orient it (standing, as in CAD, or front face down, the natural way to print it) and a scale. STL has no units, so sizes are always millimetres. A full-size window is metres tall, so choose a scale such as 1:20 for a model that fits a printer.</p>`,
+p:`<p>Format: AutoCAD R12 ASCII (AC1009) with LTYPE and LAYER tables. Closed outlines are POLYLINE, VERTEX and SEQEND. Construction items are CIRCLE, LINE and POINT, and meshes are 3DFACE with the fourth corner repeating the third. R12 was chosen because nearly every CAD, CAM and BIM tool reads it.</p><p>Outlines are the polygons the app computes, about 4° of arc per segment, so a construction circle is exact and a head is a polyline. Coordinates are written to 4 decimals in millimetres or 6 in inches.</p><p>3D axes: the viewer's (x, y, z) become DXF <code>(x, −z, y)</code>, a pure rotation, so X is across, Y runs into the wall from the front face (Y = 0) and Z is up. Triangles come from the same extrusion and chamfer code as the 3D view.</p><p>STL is written as binary: an 80-byte header that does not begin with the word solid, a uint32 triangle count, then 50 bytes per triangle (a unit normal, three vertices as little-endian float32, and a zero attribute). Standing uses the same axis conversion as the DXF, <code>(x, −z, y)</code>. Front face down uses <code>(x, −y, −z)</code>, a 180° turn about X, so the model is rotated and never mirrored, and the front face is on the bed. Every coordinate is multiplied by 1/N for a 1:N scale. Normals are recomputed from the vertices after the transform, and zero-area triangles are dropped.</p>`,
+
 live:()=>`The 2D file would hold ${G.op.O.length} opening, ${G.surround.length} wall, ${G.tracery.length} tracery and ${G.lights.length} glass outline${G.lights.length===1?'':'s'}, plus ${G.cons.length} construction items. The file name would end -${UNITS==='imperial'?'in':'mm'}.`},
 
 {id:'units',t:'Units and rounding',
@@ -3069,7 +3071,7 @@ function askDialog(opt){
     yes.textContent=opt.confirmLabel||'OK';
     inp.hidden=!opt.input;
     sl.hidden=!opt.options;
-    if(opt.input){inp.value=opt.value||'';}
+    if(opt.input){inp.value=opt.value||'';inp.placeholder=opt.placeholder||'';}
     if(opt.options){sl.innerHTML=opt.options.map(o=>`<option value="${escapeAttr(o[0])}">${escapeHtml(o[1])}</option>`).join('');}
     m.hidden=false;
     const done=v=>{
@@ -3077,10 +3079,11 @@ function askDialog(opt){
       yes.onclick=null;no.onclick=null;inp.onkeydown=null;
       resolve(v);
     };
-    yes.onclick=()=>done(opt.input?inp.value:(opt.options?sl.value:true));
+    const result=()=>opt.input&&opt.options?{v:sl.value,t:inp.value}:(opt.input?inp.value:(opt.options?sl.value:true));
+    yes.onclick=()=>done(result());
     no.onclick=()=>done(null);
     inp.onkeydown=e=>{
-      if(e.key==='Enter'){e.preventDefault();done(inp.value);}
+      if(e.key==='Enter'){e.preventDefault();done(result());}
       else if(e.key==='Escape'){e.preventDefault();done(null);}
     };
     if(opt.input)setTimeout(()=>{inp.focus();inp.select();},0);
@@ -3293,6 +3296,99 @@ function dxfFaces(g,u,layer,geo,zOff,counter){
   }
 }
 
+
+function repairMesh(geo){
+  const pos=geo.attributes.position,idx=geo.index;
+  const cnt=idx?idx.count:pos.count;
+  let tris=[];
+  const vget=i=>{const j=idx?idx.getX(i):i;return [pos.getX(j),pos.getY(j),pos.getZ(j)];};
+  for(let i=0;i+2<cnt;i+=3)tris.push([vget(i),vget(i+1),vget(i+2)]);
+  const CELL=25;
+  const key3=v=>Math.round(v[0]*1000)+','+Math.round(v[1]*1000)+','+Math.round(v[2]*1000);
+  const uniq=new Map();
+  tris.forEach(t=>t.forEach(v=>{const k=key3(v);if(!uniq.has(k))uniq.set(k,v);}));
+  const grid=new Map();
+  const cell=(x,y,z)=>Math.floor(x/CELL)+','+Math.floor(y/CELL)+','+Math.floor(z/CELL);
+  uniq.forEach(v=>{
+    const k=cell(v[0],v[1],v[2]);
+    if(!grid.has(k))grid.set(k,[]);
+    grid.get(k).push(v);
+  });
+  function onEdge(a,b){
+    const dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2];
+    const L2=dx*dx+dy*dy+dz*dz;
+    if(L2<1e-12)return [];
+    const L=Math.sqrt(L2);
+    const steps=Math.max(1,Math.ceil(L/CELL));
+    const seen=new Set();
+    const hit=[];
+    for(let st=0;st<=steps;st++){
+      const t=st/steps;
+      const cx=Math.floor((a[0]+dx*t)/CELL),cy=Math.floor((a[1]+dy*t)/CELL),cz=Math.floor((a[2]+dz*t)/CELL);
+      for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)for(let k=-1;k<=1;k++){
+        const lst=grid.get((cx+i)+','+(cy+j)+','+(cz+k));
+        if(!lst)continue;
+        for(let q=0;q<lst.length;q++){
+          const v=lst[q];
+          if(seen.has(v))continue;
+          seen.add(v);
+          const wx=v[0]-a[0],wy=v[1]-a[1],wz=v[2]-a[2];
+          const u=(wx*dx+wy*dy+wz*dz)/L2;
+          if(u<=1e-7||u>=1-1e-7)continue;
+          const ex=a[0]+dx*u-v[0],ey=a[1]+dy*u-v[1],ez=a[2]+dz*u-v[2];
+          if(ex*ex+ey*ey+ez*ez<4e-6)hit.push([u,v]);
+        }
+      }
+    }
+    hit.sort((m,n)=>m[0]-n[0]);
+    return hit.map(h=>h[1]);
+  }
+  for(let pass=0;pass<12;pass++){
+    const dir=new Set();
+    tris.forEach(t=>{for(let q=0;q<3;q++)dir.add(key3(t[q])+'>'+key3(t[(q+1)%3]));});
+    const unmatched=(a,b)=>!dir.has(key3(b)+'>'+key3(a));
+    let changed=false;
+    const next=[];
+    tris.forEach(t=>{
+      let q=-1,hit=null;
+      for(let e=0;e<3&&q<0;e++){
+        if(unmatched(t[e],t[(e+1)%3])){
+          const h=onEdge(t[e],t[(e+1)%3]);
+          if(h.length){q=e;hit=h;}
+        }
+      }
+      if(q<0){next.push(t);return;}
+      changed=true;
+      const a=t[q],b=t[(q+1)%3],c=t[(q+2)%3];
+      const chain=[a].concat(hit,[b]);
+      for(let i=0;i+1<chain.length;i++)next.push([chain[i],chain[i+1],c]);
+    });
+    tris=next;
+    if(!changed)break;
+  }
+  const arr=new Float32Array(tris.length*9);
+  tris.forEach((t,i)=>{for(let q=0;q<3;q++){arr[i*9+q*3]=t[q][0];arr[i*9+q*3+1]=t[q][1];arr[i*9+q*3+2]=t[q][2];}});
+  const out=new THREE.BufferGeometry();
+  out.setAttribute('position',new THREE.BufferAttribute(arr,3));
+  geo.dispose();
+  return out;
+}
+
+function modelParts(){
+  const parts=[];
+  const cham=Math.min(S.chamfer,G.hw*0.45);
+  const wallShapes=G.surTree.Childs().length?treeShapes(G.surTree).map(s=>polyShape(s.outer,s.holes)):[];
+  const tracShapes=treeShapes(G.tracTree).map(s=>polyShape(s.outer,s.holes));
+  const wallD=S.wallDepth,tracD=S.tracDepth;
+  if(wallShapes.length)parts.push({layer:'WALL',geo:repairMesh(solidGeo(wallShapes,wallD,S.chamfer)),zOff:-wallD});
+  if(tracShapes.length)parts.push({layer:'TRACERY',geo:repairMesh(solidGeo(tracShapes,tracD,cham)),zOff:-S.setback-tracD});
+  const gt=Math.max(8,Math.min(24,tracD*0.12));
+  G.lightShapes.forEach(sh=>{
+    parts.push({layer:'GLASS',geo:repairMesh(new THREE.ExtrudeGeometry([polyShape(sh.outer,sh.holes)],{depth:gt,bevelEnabled:false,curveSegments:1,steps:1})),zOff:-S.setback-tracD/2-gt/2});
+  });
+  return parts;
+}
+
 function dxf3dText(){
   const u=dxfUnits();
   const L=[];
@@ -3300,30 +3396,84 @@ function dxf3dText(){
   const counter={n:0};
   const layers=[['WALL',8],['TRACERY',2],['GLASS',4]];
   dxfHead(g,u,layers,'TRACERY v'+APP_VERSION+' 3D model, units: '+u.name+', X across, Y into the wall from the front face, Z up');
-  const cham=Math.min(S.chamfer,G.hw*0.45);
-  const wallShapes=G.surTree.Childs().length?treeShapes(G.surTree).map(s=>polyShape(s.outer,s.holes)):[];
-  const tracShapes=treeShapes(G.tracTree).map(s=>polyShape(s.outer,s.holes));
-  const wallD=S.wallDepth,tracD=S.tracDepth;
-  if(wallShapes.length)dxfFaces(g,u,'WALL',solidGeo(wallShapes,wallD,S.chamfer),-wallD,counter);
-  if(tracShapes.length)dxfFaces(g,u,'TRACERY',solidGeo(tracShapes,tracD,cham),-S.setback-tracD,counter);
-  const gt=Math.max(8,Math.min(24,tracD*0.12));
-  G.lightShapes.forEach(sh=>{
-    const geo=new THREE.ExtrudeGeometry([polyShape(sh.outer,sh.holes)],{depth:gt,bevelEnabled:false,curveSegments:1,steps:1});
-    dxfFaces(g,u,'GLASS',geo,-S.setback-tracD/2-gt/2,counter);
-    geo.dispose();
+  modelParts().forEach(pt=>{
+    dxfFaces(g,u,pt.layer,pt.geo,pt.zOff,counter);
+    pt.geo.dispose();
   });
   dxfTail(g);
   return {text:L.join('\n')+'\n',faces:counter.n};
 }
 
-function downloadText(name,text,type){
-  const blob=new Blob([text],{type});
+const STL_MODES=[['all-stand','Stone and glass, standing (CAD, Blender, Rhino)'],['stone-stand','Stone only, standing'],['stone-flat','Stone only, front face down (3D printing)'],['all-flat','Stone and glass, front face down (3D printing)'],['glass-stand','Glass only, standing']];
+
+function parseScale(str){
+  let s=String(str===null||str===undefined?'':str).trim().replace(/\s+/g,'');
+  if(!s)return NaN;
+  let m=s.match(/^1:(\d+(?:\.\d+)?)$/);
+  if(!m)m=s.match(/^1\/(\d+(?:\.\d+)?)$/);
+  if(!m)m=s.match(/^(\d+(?:\.\d+)?)$/);
+  if(!m)return NaN;
+  const n=parseFloat(m[1]);
+  return n>=1&&n<=1000?n:NaN;
+}
+
+function stlBuild(mode,scaleN){
+  const want=mode.split('-')[0],flat=mode.split('-')[1]==='flat';
+  const parts=modelParts().filter(pt=>want==='all'||(want==='stone'&&pt.layer!=='GLASS')||(want==='glass'&&pt.layer==='GLASS'));
+  let total=0;
+  parts.forEach(pt=>{total+=(pt.geo.index?pt.geo.index.count:pt.geo.attributes.position.count)/3;});
+  const buf=new ArrayBuffer(84+50*total);
+  const dv=new DataView(buf);
+  const head='TRACERY v'+APP_VERSION+' STL, millimetres, scale 1:'+scaleN+(flat?', front face down':', standing');
+  for(let i=0;i<head.length&&i<80;i++)dv.setUint8(i,head.charCodeAt(i)&127);
+  const k=1/scaleN;
+  let off=84,written=0;
+  const tf=flat?(x,y,z)=>[x*k,-y*k,-z*k]:(x,y,z)=>[x*k,-z*k,y*k];
+  parts.forEach(pt=>{
+    const pos=pt.geo.attributes.position,idx=pt.geo.index;
+    const cnt=idx?idx.count:pos.count;
+    const vert=i=>{const j=idx?idx.getX(i):i;return tf(pos.getX(j),pos.getY(j),pos.getZ(j)+pt.zOff);};
+    for(let i=0;i+2<cnt;i+=3){
+      const a=vert(i),b=vert(i+1),c=vert(i+2);
+      const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
+      let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;
+      const len=Math.hypot(nx,ny,nz);
+      if(!(len>1e-12*k*k))continue;
+      nx/=len;ny/=len;nz/=len;
+      [nx,ny,nz].concat(a,b,c).forEach((v,q)=>dv.setFloat32(off+q*4,v,true));
+      dv.setUint16(off+48,0,true);
+      off+=50;written++;
+    }
+    pt.geo.dispose();
+  });
+  dv.setUint32(80,written,true);
+  return {buffer:buf.slice(0,84+50*written),triangles:written};
+}
+
+async function exportStl(){
+  if(!G)return;
+  const r=await askDialog({message:'STL files have no units. Sizes are written in millimetres, which printing software assumes. Choose what to export, and a scale: 1 : 20 makes the model one twentieth of full size.',options:STL_MODES,input:true,value:'1',placeholder:'Scale 1 : N',confirmLabel:'Export'});
+  if(r===null)return;
+  const n=parseScale(r.t);
+  if(!isFinite(n)){toast('Scale must be a number from 1 to 1000, for example 20 or 1:20');return;}
+  const res=stlBuild(r.v,n);
+  const want=r.v.split('-')[0],flat=r.v.split('-')[1]==='flat';
+  const name='tracery-'+S.arch+'-'+S.pattern+'-'+want+'-'+(flat?'flat':'standing')+(n>1?'-1to'+n:'')+'.stl';
+  downloadBlob(name,new Blob([res.buffer],{type:'model/stl'}));
+  toast('STL exported: '+res.triangles.toLocaleString('en-US')+' triangles, '+(res.buffer.byteLength/1048576).toFixed(1)+' MB');
+}
+
+function downloadBlob(name,blob){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=name;
   document.body.appendChild(a);
   a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+}
+
+function downloadText(name,text,type){
+  downloadBlob(name,new Blob([text],{type}));
 }
 
 function exportDxf(kind){
@@ -3440,6 +3590,7 @@ function initUi(){
     ex.value='';
     if(v==='svg')exportSvg();
     else if(v==='dxf2d'||v==='dxf3d')exportDxf(v);
+    else if(v==='stl')exportStl();
     else if(v==='share')copyShareLink();
   });
   document.getElementById('btnReset').addEventListener('click',async()=>{
