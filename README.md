@@ -8,4 +8,6 @@ The Help button opens a guide with a Student, Designer and Professional explanat
 
 The app is a single index.html with no build step. Open it in a browser, or deploy the folder to Netlify. Run node audit_deploy.js before any change is called done.
 
-Joe.K · axisbim.io
+---
+Joe.K · [axisbim.io](https://axisbim.io)
+
