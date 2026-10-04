@@ -252,7 +252,7 @@ footer a:hover{color:var(--accent)}
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-const APP_VERSION='1.12.0';
+const APP_VERSION='1.12.1';
 const SC=100;
 const TAU=Math.PI*2;
 const PHI=(1+Math.sqrt(5))/2;
@@ -313,7 +313,7 @@ const DEFAULT={
   latCell:'star',pitch:240,rot:0,starPts:8,starDepth:0.55,dual:true,
   mondSplits:8,mondSeed:4,polychrome:false,
   bar:42,frame:60,margin:350,
-  wallDepth:450,tracDepth:200,setback:120,chamfer:8,glassOp:0.55,stained:true,explode:0,edges:true,wire:false,secOn:false,secX:0,sunAz:35,sunEl:45,
+  wallDepth:450,tracDepth:200,setback:120,chamfer:8,glassOp:0.55,stained:false,explode:0,edges:true,wire:false,secOn:false,secX:0,sunAz:35,sunEl:45,
   lyStone:true,lyGlass:true,lyCons:true,lyDims:true,
   customCols:[300,400,300],customRows:[600,900,600],
   cnc:false,cncD:6.35,cncWeb:6.35
@@ -334,7 +334,7 @@ const PRESETS=[
   {n:'Gaudí catenary',s:{arch:'catenary',span:1000,height:3200,rise:0.9,pattern:'grid',cols:5,rows:8,scheme:'uniform',rowScheme:'uniform',warp:35,warpLen:1200,seed:3,bar:32,frame:48}},
   {n:'Mondrian-style composition',s:{arch:'flat',span:1130,height:1830,pattern:'mondrian',mondSplits:8,mondSeed:4,bar:46,frame:46,stained:true}},
   {n:'Modulor Blue grid — Corbusier polychromy',s:{arch:'flat',span:1130,height:1830,pattern:'grid',cols:3,rows:4,scheme:'modBlue',rowScheme:'modBlue',sym:false,warp:0,polychrome:true,seed:5,bar:40,frame:40,stained:true}},
-  {n:'Modernist Modulor grid',s:{arch:'flat',span:1130,height:2260,pattern:'grid',cols:4,rows:5,scheme:'modBlue',rowScheme:'modBlue',sym:false,warp:0,polychrome:true,bar:30,frame:30}}
+  {n:'Modernist Modulor grid',s:{arch:'flat',span:1130,height:2260,pattern:'grid',cols:4,rows:5,scheme:'modBlue',rowScheme:'modBlue',sym:false,warp:0,polychrome:true,stained:true,bar:30,frame:30}}
 ];
 
 const HARD={span:[100,20000],height:[200,40000],rise:[0.02,2],rho:[0.5,4],stilt:[0.02,1.5],r1:[0.02,0.5],phi:[5,89],lobes:[3,21],bulge:[0.1,2],
@@ -2076,7 +2076,7 @@ const HELP_CONTROLS=[
 ['3D form',[
 ['Wall thickness, Tracery depth, Setback','How deep the wall is, how deep the tracery bars are, and how far behind the wall face the tracery sits.'],
 ['Chamfer','Bevel on the stone edges. It is limited so narrow bars keep a flat face.'],
-['Glass opacity and Colour fills','How see-through the glass is, and whether it takes stained tints, Mondrian colours or Corbusier polychromy.'],
+['Glass opacity and Colour fills','How see-through the glass is, and whether it takes stained tints, Mondrian colours or Corbusier polychromy. Colour fills start off, so the glass is plain until you tick it. The Mondrian and Modulor presets switch it on.'],
 ['Explode layers','Slides the wall forward and the glass back so each layer can be seen.'],
 ['Edge lines and Wireframe','Draw the outlines of the stone, or show the mesh.'],
 ['Section cut and Cut position','Slices the model on a vertical plane and removes everything on one side. Cut position moves the plane left or right of the centreline. The Section button turns the cut on and views it from the side. Front and Oblique turn it off.'],
