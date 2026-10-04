@@ -96,6 +96,8 @@ select{background:var(--btnbg);border:1px solid var(--line);padding:6px 8px;colo
 .row input[type=range]{grid-column:1/3;width:100%;accent-color:var(--accent);height:18px;margin:0}
 .row select{grid-column:1/3;width:100%}
 .row.chk{grid-template-columns:1fr}
+.row.act{grid-template-columns:1fr}
+.row.act button{width:100%}
 .row.chk label{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:12px;cursor:pointer}
 .row.chk input{accent-color:var(--accent)}
 #main{display:grid;grid-template-rows:minmax(0,1fr) auto;min-width:0;min-height:0}
@@ -110,6 +112,12 @@ select{background:var(--btnbg);border:1px solid var(--line);padding:6px 8px;colo
 .pane-h input{accent-color:var(--accent);margin:0}
 .stage{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none}
 .stage canvas{display:block;position:absolute;inset:0}
+.stepbar{position:absolute;left:12px;right:12px;bottom:12px;background:var(--card);border:1px solid var(--line);padding:10px 12px;box-shadow:0 4px 18px rgba(0,0,0,.35)}
+.stepcap{font-size:13px;line-height:1.5;min-height:40px;margin-bottom:8px}
+.stepctl{display:flex;gap:8px;align-items:center}
+.stepctl .sp{flex:1}
+.stepctl span{font-family:'Space Mono',monospace;font-size:11px;color:var(--mute)}
+#btnSteps.on{border-color:var(--accent);color:var(--accent)}
 .nogl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mute);font-family:'Space Mono',monospace;font-size:12px;padding:20px;text-align:center}
 .analysis{border-top:1px solid var(--line);background:var(--card);padding:10px 14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px 18px;max-height:170px;overflow-y:auto}
 .kv{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dotted var(--line);padding:2px 0;font-size:12px}
@@ -187,7 +195,7 @@ footer a:hover{color:var(--accent)}
     <button id="btnShuffle" class="pri" title="New variation of this head and pattern">Shuffle</button>
     <button id="btnShuffleAll" title="New head and pattern as well">Shuffle all</button>
     <button id="btnBack" title="Back to the design before the last shuffle" disabled>Back</button>
-    <select id="exportSel" aria-label="Export" title="Export the window"><option value="">Export…</option><option value="svg">SVG — 2D linework</option><option value="dxf2d">DXF — 2D elevation</option><option value="dxf3d">DXF — 3D model</option></select>
+    <select id="exportSel" aria-label="Export" title="Export the window"><option value="">Export…</option><option value="svg">SVG — 2D linework</option><option value="dxf2d">DXF — 2D elevation</option><option value="dxf3d">DXF — 3D model</option><option value="share">Copy share link</option></select>
     <button id="btnReset">Reset</button>
     <button id="btnUnits" title="Switch between millimetres and feet-inches">Imperial</button>
     <button id="btnTheme">Light</button>
@@ -202,9 +210,14 @@ footer a:hover{color:var(--accent)}
             <label><input type="checkbox" id="ly_lyGlass"> glass</label>
             <label><input type="checkbox" id="ly_lyCons"> construction</label>
             <label><input type="checkbox" id="ly_lyDims"> dims</label>
+            <button id="btnSteps" title="Watch the construction step by step">Steps</button>
             <button id="btnFit">Fit</button>
           </div>
-          <div class="stage" id="stage2d"><canvas id="cv2d"></canvas></div>
+          <div class="stage" id="stage2d"><canvas id="cv2d"></canvas>
+            <div class="stepbar" id="stepbar" hidden>
+              <div class="stepcap" id="stepCap"></div>
+              <div class="stepctl"><button id="stepPrev">Back</button><button id="stepPlay">Play</button><button id="stepNext" class="pri">Next</button><span id="stepNum"></span><span class="sp"></span><button id="stepClose">Close</button></div>
+            </div></div>
         </section>
         <section class="pane">
           <div class="pane-h"><b>3D</b> FORM <span class="sp"></span>
@@ -239,7 +252,7 @@ footer a:hover{color:var(--accent)}
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-const APP_VERSION='1.10.0';
+const APP_VERSION='1.11.0';
 const SC=100;
 const TAU=Math.PI*2;
 const PHI=(1+Math.sqrt(5))/2;
@@ -258,7 +271,7 @@ const UPRE_KEY='tracery.userpresets';
 const VIEW_KEYS=['secOn','secX','explode','wire'];
 let UNITS='metric';
 let userPresets=[];
-const secOpen={open:true,trac:false,bars:false,three:false};
+const secOpen={open:true,trac:false,bars:false,cnc:false,three:false};
 const CL=window.ClipperLib;
 
 const OPTS_ARCH=[['round','Semicircular (Romanesque)'],['segmental','Segmental'],['horseshoe','Horseshoe (Moorish)'],['pointed','Pointed — drop · equilateral · lancet'],['tudor','Four-centred (Tudor)'],['ogee','Ogee'],['multifoil','Multifoil / cusped'],['ellipse','Semi-elliptical'],['parabola','Parabolic'],['catenary','Catenary (Gaudí)'],['flat','Flat lintel'],['circle','Circular — oculus · rose']];
@@ -302,7 +315,8 @@ const DEFAULT={
   bar:42,frame:60,margin:350,
   wallDepth:450,tracDepth:200,setback:120,chamfer:8,glassOp:0.55,stained:true,explode:0,edges:true,wire:false,secOn:false,secX:0,sunAz:35,sunEl:45,
   lyStone:true,lyGlass:true,lyCons:true,lyDims:true,
-  customCols:[300,400,300],customRows:[600,900,600]
+  customCols:[300,400,300],customRows:[600,900,600],
+  cnc:false,cncD:6.35,cncWeb:6.35
 };
 
 const PRESETS=[
@@ -327,6 +341,7 @@ const HARD={span:[100,20000],height:[200,40000],rise:[0.02,2],rho:[0.5,4],stilt:
   lights:[1,12],subRho:[0.5,4],subSpring:[0.05,1],subFoils:[0,12],subBulge:[0.1,2],circles:[0,40],minR:[5,2000],foilN:[0,16],petals:[3,36],
   cols:[1,20],rows:[1,30],warp:[0,600],warpLen:[100,20000],seed:[1,99999],pitch:[40,3000],rot:[0,360],starPts:[3,48],starDepth:[0.1,0.95],
   mondSplits:[1,30],mondSeed:[1,99999],bar:[2,600],frame:[0,1000],margin:[0,6000],wallDepth:[10,10000],tracDepth:[5,5000],setback:[0,5000],
+  cncD:[0.5,200],cncWeb:[0.5,200],
   chamfer:[0,300],glassOp:[0.05,1],explode:[0,20000],sunAz:[-180,180],sunEl:[1,89],secX:[-20000,20000]};
 const INTS=new Set(['lobes','lights','subFoils','circles','foilN','petals','cols','rows','seed','starPts','mondSplits','mondSeed']);
 
@@ -379,6 +394,12 @@ const SECTIONS=[
     {k:'bar',l:'Bar width',t:'range',min:10,max:140,step:1,u:'mm',g:1},
     {k:'frame',l:'Jamb / frame width',t:'range',min:0,max:200,step:1,u:'mm',g:1},
     {k:'margin',l:'Wall margin',t:'range',min:100,max:900,step:10,u:'mm',g:1}
+  ]},
+  {id:'cnc',title:'CNC check',p:[
+    {k:'cnc',l:'Check for CNC cutting',t:'check',g:1},
+    {k:'cncD',l:'Cutter diameter',t:'range',min:1,max:25,step:0.25,u:'mm',g:1,show:s=>s.cnc},
+    {k:'cncWeb',l:'Minimum stone web',t:'range',min:1,max:25,step:0.25,u:'mm',g:1,show:s=>s.cnc},
+    {k:'cncFind',l:'Find the largest cutter that works',t:'action',show:s=>s.cnc}
   ]},
   {id:'three',title:'3D form',p:[
     {k:'wallDepth',l:'Wall thickness',t:'range',min:100,max:1400,step:10,u:'mm'},
@@ -450,6 +471,57 @@ function fmtImp(mm){
   else out=inch+'"';
   return (neg?'-':'')+out;
 }
+
+function cncReach(lights,shapes,r){
+  const keep=[];
+  let small=0;
+  const smallPaths=[];
+  shapes.forEach(sh=>{
+    const ps=[sh.outer].concat(sh.holes);
+    if(!offsetPaths(ps,-r).length){small++;smallPaths.push(sh.outer);}
+    else ps.forEach(q=>keep.push(q));
+  });
+  const opened=offsetPaths(offsetPaths(keep,-r),r);
+  const res=boolOp(keep,opened,CL.ClipType.ctDifference);
+  const reach=offsetPaths(opened,r);
+  const deep=boolOp(res,reach,CL.ClipType.ctDifference).filter(q=>CL.Clipper.Area(q)/(SC*SC)>0.05*r*r);
+  return {small,smallPaths,deep,residue:areaMM2(res)};
+}
+
+function cncCheck(lights,shapes,tracery,D,web){
+  const r=D/2;
+  const a=cncReach(lights,shapes,r);
+  const w2=web/2;
+  const openT=offsetPaths(offsetPaths(tracery,-w2),w2);
+  const resT=boolOp(tracery,openT,CL.ClipType.ctDifference);
+  const thin=boolOp(resT,offsetPaths(openT,w2),CL.ClipType.ctDifference).filter(q=>CL.Clipper.Area(q)/(SC*SC)>0.05*web*web);
+  return {D,web,small:a.small,smallPaths:a.smallPaths,deep:a.deep,deepN:a.deep.length,thin,thinN:thin.length,residue:a.residue,largest:null,
+    ok:a.small===0&&a.deep.length===0&&thin.length===0};
+}
+
+function cncLargest(g,span){
+  const clean=r=>{const a=cncReach(g.lights,g.lightShapes,r);return a.small===0&&a.deep.length===0;};
+  let lo=0.25,hi=Math.min(span/2,400);
+  if(!clean(lo))return 0;
+  if(clean(hi))return Math.round(hi*2*10)/10;
+  for(let i=0;i<12;i++){
+    const mid=(lo+hi)/2;
+    if(clean(mid))lo=mid;else hi=mid;
+  }
+  return Math.round(lo*2*10)/10;
+}
+
+function cncFindLargest(){
+  if(!G||!G.cnc)return;
+  toast('Finding the largest cutter…');
+  setTimeout(()=>{
+    const d=cncLargest(G,S.span);
+    G.cnc.largest=d;
+    document.getElementById('analysis').innerHTML=analysisHtml();
+    toast(d>0?'Largest cutter that cuts it cleanly: '+fmtLenEdit(d):'No cutter this large or small cuts every part cleanly');
+  },30);
+}
+
 function fmtLen(mm){
   return UNITS==='imperial'?fmtImp(mm):Math.round(mm).toLocaleString('en-US')+' mm';
 }
@@ -648,6 +720,7 @@ function headMultifoil(h,rho,N,bulge){
   const P=resample(base.pts,N);
   const pts=[];
   const cons=[];
+  const lobes=[];
   for(let i=0;i<N;i++){
     const p0=P[i],p1=P[i+1];
     const dx=p1[0]-p0[0],dy=p1[1]-p0[1];
@@ -665,11 +738,12 @@ function headMultifoil(h,rho,N,bulge){
     while(d<-TAU)d+=TAU;
     const arc=arcPts(cx,cy,r,a0,a0+d);
     arc.forEach((q,j)=>{if(i===0||j>0)pts.push(q);});
+    lobes.push({cx,cy,r,a0:a0+d,a1:a0});
     cons.push(cCirc(cx,cy,r),cPt(cx,cy));
   }
   let rise=0;
   pts.forEach(p=>{if(p[1]>rise)rise=p[1];});
-  return {pts,cons:cons.concat(base.pts.map((p,i)=>i%6===0?cPt(p[0],p[1]):null).filter(Boolean)),rise,
+  return {pts,cons:cons.concat(base.pts.map((p,i)=>i%6===0?cPt(p[0],p[1]):null).filter(Boolean)),rise,lobes,div:P,base:base.pts,
     info:{name:N===3?'Trefoil arch':'Multifoil arch ('+N+' lobes)',radii:[],centers:N,apex:null}};
 }
 function headEllipse(h,rise){
@@ -692,7 +766,7 @@ function headCatenary(h,rise){
   const a=Math.sqrt(lo*hi);
   const pts=[];
   for(let i=0;i<=64;i++){const x=-h+2*h*i/64;pts.push([x,rise-a*(Math.cosh(x/a)-1)]);}
-  return {pts,cons:[cLn(0,0,0,rise)],rise,info:{name:'Catenary',radii:[],centers:0,apex:null,extra:'chain parameter a = '+fmtLen(a)}};
+  return {pts,cons:[cLn(0,0,0,rise)],rise,info:{name:'Catenary',radii:[],centers:0,apex:null,a,extra:'chain parameter a = '+fmtLen(a)}};
 }
 function headFlat(h){
   return {pts:[[-h,0],[h,0]],cons:[],rise:0,info:{name:'Flat lintel',radii:[],centers:0,apex:null}};
@@ -720,11 +794,13 @@ function buildOpening(S){
   if(S.arch==='circle'){
     const pts=circPts(0,h,h);
     return {h,Ht:span,ys:h,rise:h,O:[toPath(pts)],pts,cons:[cCirc(0,h,h),cPt(0,h),cLn(-h,h,h,h),cLn(0,0,0,span)],
-      info:{name:'Circular',radii:[h],centers:1,apex:null},circle:{x:0,y:h,r:h},warn:null};
+      info:{name:'Circular',radii:[h],centers:1,apex:null},circle:{x:0,y:h,r:h},warn:null,kind:'circle'};
   }
   let warn=null;
+  let kind=S.arch;
   let head=makeHead(S,h,span);
   if(!head){
+    kind='pointed';
     head=headPointed(h,1);
     warn='Parameters out of range for this head — showing an equilateral arch instead.';
   }
@@ -739,7 +815,7 @@ function buildOpening(S){
   const poly=[[-h,0]].concat(hp).concat([[h,0]]);
   const cons=shiftCons(head.cons,0,ys);
   cons.push(cLn(-h,ys,h,ys));
-  return {h,Ht,ys,rise:head.rise,O:[toPath(poly)],pts:poly,cons,info:head.info,circle:null,warn};
+  return {h,Ht,ys,rise:head.rise,O:[toPath(poly)],pts:poly,cons,info:head.info,circle:null,warn,kind,head};
 }
 
 function isMod(sch){return sch==='modBlue'||sch==='modRed';}
@@ -1235,7 +1311,8 @@ function compute(S){
   const lightShapes=treeShapes(lightTree);
   const lightColors=r.colors?lightShapes.map(sh=>lightColor(sh,r.cells,r.colors)):null;
   const aO=areaMM2(op.O),aL=areaMM2(lights);
-  return {op,lights,lightShapes,lightColors,barColor:r.barColor||null,tracery,surround,rect,cons:op.cons.concat(r.cons),notes:r.notes,
+  const cnc=S.cnc?cncCheck(lights,lightShapes,tracery,S.cncD,S.cncWeb):null;
+  return {op,cells:r.cells,cnc,lights,lightShapes,lightColors,barColor:r.barColor||null,tracery,surround,rect,cons:op.cons.concat(r.cons),notes:r.notes,
     glaze:aO>0?aL/aO:0,nLights:lightShapes.length,hw,fEff,tracTree:boolTree(op.O,lights,CL.ClipType.ctDifference),surTree:boolTree([rectP],op.O,CL.ClipType.ctDifference),
     Ht:op.Ht,warn:op.warn||(lightShapes.length?null:'No lights remain — bars are wider than the cells. Reduce bar width or enlarge the pattern.')};
 }
@@ -1263,8 +1340,17 @@ function analysisHtml(){
   kv('Glazing ratio',(G.glaze*100).toFixed(1)+'%');
   kv('Bar · frame',fmtLen(S.bar)+' · '+fmtLen(G.fEff));
   G.notes.forEach(n=>kv(n[0],n[1]));
+  if(G.cnc){
+    const c=G.cnc;
+    kv('CNC cutter',fmtLenEdit(c.D)+' · web '+fmtLenEdit(c.web));
+    kv('Lights too small',String(c.small),c.small?'warn':'');
+    kv('Tight points and slots',String(c.deepN),c.deepN?'warn':'');
+    kv('Thin stone',String(c.thinN),c.thinN?'warn':'');
+    if(c.largest!==null&&c.largest!==undefined)kv('Largest clean cutter',c.largest>0?fmtLenEdit(c.largest):'none');
+  }
   if(G.warn)kv('Notice',G.warn,'warn');
   let html=rows.join('');
+  if(G.cnc)html+=`<div class="note">${escapeHtml(G.cnc.ok?'CNC check: every light can be entered and reached, and no stone is thinner than the minimum web. Inside corners will be rounded to the cutter radius.':'CNC check: '+(G.cnc.small?G.cnc.small+' light'+(G.cnc.small===1?'':'s')+' too small to enter. ':'')+(G.cnc.deepN?G.cnc.deepN+' tight point'+(G.cnc.deepN===1?'':'s')+' or slot'+(G.cnc.deepN===1?'':'s')+' the cutter cannot reach, shown in red. ':'')+(G.cnc.thinN?G.cnc.thinN+' place'+(G.cnc.thinN===1?'':'s')+' where the stone is thinner than the minimum web, shown in red.':''))}</div>`;
   html+=`<div class="note">${escapeHtml(ARCH_NOTES[S.arch]||'')}</div>`;
   return html;
 }
@@ -1276,6 +1362,240 @@ function tracePaths(x,paths){
     for(let i=1;i<p.length;i++)x.lineTo(p[i].X/SC,p[i].Y/SC);
     x.closePath();
   });
+}
+
+
+const stepState={on:false,i:0,timer:null,list:[]};
+
+function stepsFor(S,G){
+  const op=G.op,h=op.h,ys=op.ys,sp=S.span,PI=Math.PI;
+  const list=[];
+  const L=(x0,y0,x1,y1)=>({k:'l',x0,y0,x1,y1});
+  const Cc=(cx,cy,r)=>({k:'c',cx,cy,r});
+  const Pt=(x,y,t)=>({k:'p',x,y,t});
+  const Ar=(cx,cy,r,a0,a1)=>({k:'a',cx,cy,r,a0,a1,hl:true});
+  const Pl=(pts,hl)=>({k:'pl',pts,hl:!!hl});
+  const add=(cap,items,opt)=>list.push(Object.assign({cap,items},opt||{}));
+  const A=Pt(-h,ys,'A'),B=Pt(h,ys,'B');
+  const kind=op.kind;
+  const roundSteps=()=>{
+    add(`Draw the springing line AB across the span, ${fmtLen(sp)}.`,[L(-h,ys,h,ys),A,B]);
+    add('Mark the midpoint C of AB. It will be the compass point.',[Pt(0,ys,'C')]);
+    add(`Set the compass to CA, half the span (${fmtLen(h)}), and draw a circle about C. It passes through A and B.`,[Cc(0,ys,h)]);
+    add(`Keep the upper half of the circle. This is the head. Its rise equals the radius, ${fmtLen(h)}.`,[Ar(0,ys,h,0,PI),Pt(0,ys+h,'D')]);
+  };
+  if(kind==='circle'){
+    add(`Mark the centre C of the opening, ${fmtLen(h)} above the sill.`,[Pt(0,h,'C')]);
+    add(`Set the compass to ${fmtLen(h)}, half the span, and draw the circle about C. That is the opening.`,[Ar(0,h,h,0,2*PI)]);
+  }else if(kind==='round'){
+    roundSteps();
+  }else if(kind==='segmental'){
+    const r=op.rise,R=op.info.radii[0],cy=ys+r-R;
+    const aA=Math.atan2(ys-cy,-h),aB=Math.atan2(ys-cy,h);
+    add(`Draw the springing line AB across the span, ${fmtLen(sp)}.`,[L(-h,ys,h,ys),A,B]);
+    add(`Mark the apex D, ${fmtLen(r)} above the midpoint of AB. This is the rise.`,[L(0,ys,0,ys+r),Pt(0,ys+r,'D')]);
+    add(`The centre E lies on the vertical through D and is the same distance from A, D and B. That puts it ${fmtLen(R-r)} below AB and makes the radius ${fmtLen(R)}.`,[Pt(0,cy,'E'),L(0,cy,-h,ys),L(0,cy,h,ys),L(0,cy,0,ys+r)]);
+    add('Draw the circle about E through A, D and B.',[Cc(0,cy,R)]);
+    add('Keep only the arc from A over D to B. The rest of the circle is not needed.',[Ar(0,cy,R,aB,aA)]);
+  }else if(kind==='pointed'){
+    const R=op.info.radii[0],ya=op.rise,rho=R/sp;
+    if(Math.abs(R-h)<0.5){roundSteps();}
+    else{
+      const Ex=-h+R,Fx=h-R,ta=Math.atan2(ya,h-R);
+      const equi=Math.abs(rho-1)<0.005;
+      add(`Draw the springing line AB across the span, ${fmtLen(sp)}.`,[L(-h,ys,h,ys),A,B]);
+      add(`The radius is ${fmtLen(R)}, which is ${rho.toFixed(2)} times the span. The left arc is struck from E on AB, ${fmtLen(R-h)} to the right of the midpoint, so that EA = ${fmtLen(R)}.`,[Pt(Ex,ys,'E'),L(Ex,ys,-h,ys)]);
+      add('Draw the circle about E through A.',[Cc(Ex,ys,R)]);
+      add(`By symmetry the right arc is struck from F, ${fmtLen(R-h)} to the left of the midpoint. Draw its circle through B.`,[Pt(Fx,ys,'F'),L(Fx,ys,h,ys),Cc(Fx,ys,R)]);
+      add(`The two circles cross at the apex D, ${fmtLen(ya)} above AB.`,[Pt(0,ys+ya,'D'),L(Ex,ys,0,ys+ya),L(Fx,ys,0,ys+ya)]);
+      add(`Keep arc AD, centre E, and arc DB, centre F. ${equi?'Because the radius equals the span, E is B and F is A, and ABD is an equilateral triangle.':'The arcs meet at the apex at '+op.info.apex.toFixed(1)+' degrees.'}`,[Ar(Ex,ys,R,ta,PI),Ar(Fx,ys,R,0,PI-ta)]);
+    }
+  }else if(kind==='horseshoe'){
+    const k=S.stilt*h,r=op.info.radii[0],a=Math.atan2(k,h);
+    add(`Draw the springing line AB across the span, ${fmtLen(sp)}.`,[L(-h,ys,h,ys),A,B]);
+    add(`Lift the centre E ${fmtLen(k)} above the midpoint of AB (${S.stilt.toFixed(2)} times half the span).`,[L(0,ys,0,ys+k),Pt(0,ys+k,'E')]);
+    add(`Set the compass to EA, ${fmtLen(r)}. The circle about E passes through A and B, but is wider than AB.`,[L(0,ys+k,-h,ys),L(0,ys+k,h,ys),Cc(0,ys+k,r)]);
+    add(`Keep the upper arc. It sweeps ${Math.round((PI+2*a)*180/PI)} degrees, more than a semicircle, so it swings out past A and B and returns to them.`,[Ar(0,ys+k,r,-a,PI+a)]);
+  }else if(kind==='tudor'){
+    const r1=op.info.radii[0],r2=op.info.radii[1],phi=S.phi*PI/180,ux=Math.cos(phi),uy=Math.sin(phi);
+    const Px=h-r1,t=r2-r1,Cx=Px-t*ux,Cy=ys-t*uy,Jx=Px+r1*ux,Jy=ys+r1*uy,rise=op.rise;
+    const a1=Math.atan2(ys+rise-Cy,0-Cx);
+    add(`Draw the springing line AB across the span, ${fmtLen(sp)}.`,[L(-h,ys,h,ys),A,B]);
+    add(`Mark the corner centres P and Q, ${fmtLen(r1)} inside A and B. Draw the two small circles through A and B.`,[Pt(Px,ys,'P'),Pt(-Px,ys,'Q'),Cc(Px,ys,r1),Cc(-Px,ys,r1)]);
+    add(`From P draw a ray at ${S.phi.toFixed(0)} degrees above AB. It meets the small circle at J. Do the same from Q.`,[L(Cx,Cy,Jx,Jy),L(-Cx,Cy,-Jx,Jy),Pt(Jx,Jy,'J'),Pt(-Jx,Jy,'J′')]);
+    add(`The large arcs must meet the small ones smoothly at J, so their centres lie on the line JP, extended. Mark C, ${fmtLen(r2)} from J, below AB. C′ is its mirror image.`,[Pt(Cx,Cy,'C'),Pt(-Cx,Cy,'C′')]);
+    add(`Draw circles about C and C′ with radius ${fmtLen(r2)}. They pass through J and J′ and cross at the apex D, ${fmtLen(rise)} above AB.`,[Cc(Cx,Cy,r2),Cc(-Cx,Cy,r2),Pt(0,ys+rise,'D')]);
+    add('Keep four arcs: two small ones at the corners, A to J and B to J′, and two large ones, J to D and J′ to D.',[Ar(Px,ys,r1,0,phi),Ar(-Px,ys,r1,PI-phi,PI),Ar(Cx,Cy,r2,phi,a1),Ar(-Cx,Cy,r2,PI-a1,PI-phi)]);
+  }else if(kind==='ogee'){
+    const r1=op.info.radii[0],r2=op.info.radii[1],phi=S.phi*PI/180,ux=Math.cos(phi),uy=Math.sin(phi);
+    const Px=h-r1,sx=r1+r2,Cx=Px+sx*ux,Cy=ys+sx*uy,Jx=Px+r1*ux,Jy=ys+r1*uy,rise=op.rise;
+    const a0=phi+PI,ang=Math.atan2(ys+rise-Cy,0-Cx),a1=a0+normAngle(ang-a0);
+    const lo=Math.min(a0,a1),hi=Math.max(a0,a1);
+    add(`Draw the springing line AB across the span, ${fmtLen(sp)}.`,[L(-h,ys,h,ys),A,B]);
+    add(`Mark the corner centres P and Q, ${fmtLen(r1)} inside A and B. Draw the small circles. The lower part of the curve bulges outward along these.`,[Pt(Px,ys,'P'),Pt(-Px,ys,'Q'),Cc(Px,ys,r1),Cc(-Px,ys,r1)]);
+    add(`From P draw a ray at ${S.phi.toFixed(0)} degrees. It meets the small circle at J. Continue the ray beyond J.`,[L(Px,ys,Cx,Cy),L(-Px,ys,-Cx,Cy),Pt(Jx,Jy,'J'),Pt(-Jx,Jy,'J′')]);
+    add(`The upper arcs curve the other way, so their centres lie beyond J on the same ray. Mark C, ${fmtLen(r2)} past J. C′ is its mirror image.`,[Pt(Cx,Cy,'C'),Pt(-Cx,Cy,'C′')]);
+    add(`Draw circles about C and C′ with radius ${fmtLen(r2)}. They pass through J and J′ and cross at the tip D, ${fmtLen(rise)} above AB.`,[Cc(Cx,Cy,r2),Cc(-Cx,Cy,r2),Pt(0,ys+rise,'D')]);
+    add('Keep four arcs: the convex ones from A to J and B to J′, and the concave ones from J to D and J′ to D. The change of curvature at J is the ogee.',[Ar(Px,ys,r1,0,phi),Ar(-Px,ys,r1,PI-phi,PI),Ar(Cx,Cy,r2,lo,hi),Ar(-Cx,Cy,r2,PI-hi,PI-lo)]);
+  }else if(kind==='multifoil'){
+    const hd=op.head,N=hd.lobes.length;
+    const sh=pts=>pts.map(q=>[q[0],q[1]+ys]);
+    add(`Draw the springing line AB across the span, ${fmtLen(sp)}.`,[L(-h,ys,h,ys),A,B]);
+    add(`Draw the base arch under the lobes. Its radius is ${(S.rho).toFixed(2)} times the span.`,[Pl(sh(hd.base),false)]);
+    add(`Divide the base arch into ${N} equal lengths and mark the points.`,hd.div.map((q,i)=>Pt(q[0],q[1]+ys,String(i))));
+    add('Join neighbouring points with straight chords.',hd.div.slice(0,-1).map((q,i)=>L(q[0],q[1]+ys,hd.div[i+1][0],hd.div[i+1][1]+ys)));
+    add(`On each chord strike a lobe that bulges outward, ${S.bulge.toFixed(2)} times half the chord deep. Each lobe is an arc of a circle.`,hd.lobes.map(o=>Cc(o.cx,o.cy+ys,o.r)));
+    add('Keep the arcs between the points. Where two lobes meet, the cusp points inward.',hd.lobes.map(o=>Ar(o.cx,o.cy+ys,o.r,o.a0,o.a1)));
+  }else if(kind==='ellipse'){
+    const b=op.rise,angs=[20,40,60,80].map(d=>d*PI/180);
+    const pts=op.pts.slice(1,-1);
+    add(`Draw AB across the span, ${fmtLen(sp)}, and mark the apex D, ${fmtLen(b)} above its midpoint C.`,[L(-h,ys,h,ys),A,B,L(0,ys,0,ys+b),Pt(0,ys+b,'D'),Pt(0,ys,'C')]);
+    add(`Draw two circles about C: one with radius ${fmtLen(h)} (half the span) and one with radius ${fmtLen(b)} (the rise).`,[Cc(0,ys,h),Cc(0,ys,b)]);
+    const rays=[];angs.forEach(a=>{rays.push(L(0,ys,h*Math.cos(a),ys+h*Math.sin(a)),L(0,ys,-h*Math.cos(a),ys+h*Math.sin(a)));});
+    add('Draw rays from C. Each crosses the big circle at one point and the small circle at another.',rays);
+    const guide=[];angs.forEach(a=>{
+      [1,-1].forEach(sg=>{
+        guide.push(L(sg*h*Math.cos(a),ys+h*Math.sin(a),sg*h*Math.cos(a),ys+b*Math.sin(a)),L(sg*b*Math.cos(a),ys+b*Math.sin(a),sg*h*Math.cos(a),ys+b*Math.sin(a)),Pt(sg*h*Math.cos(a),ys+b*Math.sin(a),''));
+      });
+    });
+    add('From each big-circle point go straight down, and from the matching small-circle point go straight across. The two lines meet on the ellipse.',guide);
+    add('Draw a smooth curve through those points, A, D and B.',[Pl(pts,true)]);
+  }else if(kind==='parabola'){
+    const b=op.rise,pts=op.pts.slice(1,-1),xs=[1/4,1/2,3/4].map(f=>f*h);
+    add(`Draw AB across the span, ${fmtLen(sp)}, and mark the apex D, ${fmtLen(b)} above its midpoint.`,[L(-h,ys,h,ys),A,B,Pt(0,ys+b,'D')]);
+    const marks=[];xs.forEach(x=>{marks.push(Pt(x,ys,''),Pt(-x,ys,''));});
+    add('Mark points along AB at a quarter, a half and three quarters of half the span, on both sides.',marks);
+    const ups=[];xs.forEach(x=>{const y=b*(1-(x*x)/(h*h));ups.push(L(x,ys,x,ys+y),L(-x,ys,-x,ys+y),Pt(x,ys+y,''),Pt(-x,ys+y,''));});
+    add(`At distance x from the midpoint, go up by ${fmtLen(b)} × (1 − x² ÷ ${fmtLen(h)}²). The height falls quickly toward A and B.`,ups);
+    add('Draw a smooth curve through the points, A, D and B.',[Pl(pts,true)]);
+  }else if(kind==='catenary'){
+    const b=op.rise,a=op.info.a,pts=op.pts.slice(1,-1);
+    const hang=[];for(let i=0;i<=48;i++){const x=-h+2*h*i/48;hang.push([x,ys-b+a*(Math.cosh(x/a)-1)]);}
+    add(`Draw AB across the span, ${fmtLen(sp)}, and mark the apex height ${fmtLen(b)} above it.`,[L(-h,ys,h,ys),A,B,Pt(0,ys+b,'D')]);
+    add(`Imagine a chain hung from A and B so that it sags ${fmtLen(b)}. Its shape is the catenary, with chain parameter ${fmtLen(a)}.`,[Pl(hang,false)]);
+    add('Flip the hanging chain upward about AB. Hanging chains carry load in pure tension, so the flipped arch carries load in pure compression. This is how Gaudí designed.',[Pl(pts,true)]);
+  }else if(kind==='flat'){
+    add(`Draw the lintel AB across the span, ${fmtLen(sp)}, at the head height, ${fmtLen(ys)} above the sill.`,[L(-h,ys,h,ys),A,B,Pl([[-h,ys],[h,ys]],true)]);
+  }
+  if(kind!=='circle'){
+    add(`Drop the vertical jambs from A and B to the sill. The outline is the opening, ${fmtLen(op.Ht)} high.`,[Pl(op.pts.concat([op.pts[0]]),true)]);
+  }
+  if(S.pattern!=='plain'){
+    const guides=G.cons.slice(op.cons.length);
+    const names={mullions:'Divide the width into '+G.cells.length+' lights.',geometric:'Divide the width, strike the small arches in each light, then grow circles into the gap above until they touch the arch and the lights.',rose:'Draw the rose circle, the ring of petals and the hub.'};
+    if(guides.length&&names[S.pattern])add(names[S.pattern],guides);
+    const cellPaths=[].concat.apply([],G.cells);
+    add('Draw each shape on the centre line of the stone between it and its neighbours.',[{k:'paths',paths:cellPaths,hl:false}]);
+  }
+  add(S.pattern==='plain'
+    ?`Inset the opening by the frame width, ${fmtLen(G.fEff)}. What is inside is the glass.`
+    :`Shrink every shape by half a bar, ${fmtLen(S.bar/2)}, all round, and trim to the frame, ${fmtLen(G.fEff)}. What is left between neighbours is one bar, ${fmtLen(S.bar)}.`,
+    [{k:'paths',paths:G.lights,hl:true}]);
+  add(`Glass fills the openings and everything else is stone. The glass is ${(G.glaze*100).toFixed(1)}% of the opening.`,[],{final:true});
+  return list;
+}
+
+function drawStepItem(x,it,cur,k,col,labels){
+  const accent=col('--accent'),cons=col('--cons');
+  x.setLineDash([]);
+  const stroke=it.hl?accent:(cur?accent:cons);
+  x.strokeStyle=stroke;x.fillStyle=stroke;
+  x.globalAlpha=it.hl?1:(cur?1:0.55);
+  if(it.k==='l'){
+    x.lineWidth=(cur?1.6:1)/k;
+    x.beginPath();x.moveTo(it.x0,it.y0);x.lineTo(it.x1,it.y1);x.stroke();
+  }else if(it.k==='c'){
+    x.lineWidth=(cur?1.6:1)/k;
+    x.setLineDash([6/k,4/k]);
+    x.beginPath();x.arc(it.cx,it.cy,it.r,0,TAU);x.stroke();
+    x.setLineDash([]);
+  }else if(it.k==='a'){
+    x.lineWidth=3.2/k;
+    x.beginPath();x.arc(it.cx,it.cy,it.r,it.a0,it.a1);x.stroke();
+  }else if(it.k==='pl'){
+    x.lineWidth=(it.hl?3.2:1.4)/k;
+    if(!it.hl)x.setLineDash([6/k,4/k]);
+    x.beginPath();
+    it.pts.forEach((q,i)=>{if(i)x.lineTo(q[0],q[1]);else x.moveTo(q[0],q[1]);});
+    x.stroke();
+    x.setLineDash([]);
+  }else if(it.k==='paths'){
+    x.beginPath();tracePaths(x,it.paths);
+    if(it.hl){x.globalAlpha=cur?0.35:0.2;x.fillStyle=col('--glass');x.fill('evenodd');x.globalAlpha=1;}
+    x.lineWidth=(it.hl?2.4:1.4)/k;
+    x.stroke();
+  }else if(it.k==='p'){
+    x.beginPath();x.arc(it.x,it.y,4/k,0,TAU);x.fill();
+    if(it.t)labels.push([it.x,it.y,it.t,cur]);
+  }
+  x.globalAlpha=1;
+}
+
+function drawSteps(x,k,col,tx,ty,dpr){
+  const labels=[];
+  const idx=stepState.i;
+  for(let i=0;i<=idx&&i<stepState.list.length;i++){
+    stepState.list[i].items.forEach(it=>drawStepItem(x,it,i===idx,k,col,labels));
+  }
+  x.setTransform(dpr,0,0,dpr,0,0);
+  x.font='12px "Space Mono",monospace';
+  x.textAlign='left';
+  labels.forEach(l=>{
+    x.fillStyle=l[3]?col('--ink'):col('--mute');
+    x.fillText(l[2],tx+k*l[0]+7,ty-k*l[1]-7);
+  });
+}
+
+function stepCaption(){
+  const st=stepState.list[stepState.i];
+  document.getElementById('stepNum').textContent=(stepState.i+1)+' / '+stepState.list.length;
+  document.getElementById('stepCap').textContent=st?st.cap:'';
+  document.getElementById('stepPrev').disabled=stepState.i===0;
+  document.getElementById('stepNext').disabled=stepState.i>=stepState.list.length-1;
+  document.getElementById('stepPlay').textContent=stepState.timer?'Pause':'Play';
+}
+
+function rebuildSteps(){
+  if(!stepState.on||!G)return;
+  stepState.list=stepsFor(S,G);
+  if(stepState.i>=stepState.list.length)stepState.i=stepState.list.length-1;
+  stepCaption();
+}
+
+function stopStepTimer(){
+  if(stepState.timer){clearInterval(stepState.timer);stepState.timer=null;}
+}
+function stepGo(n){
+  if(!stepState.on)return;
+  stepState.i=Math.max(0,Math.min(stepState.list.length-1,n));
+  if(stepState.i>=stepState.list.length-1)stopStepTimer();
+  stepCaption();
+  dirty2d=true;
+}
+function stepPlay(){
+  if(stepState.timer){stopStepTimer();stepCaption();return;}
+  if(stepState.i>=stepState.list.length-1)stepState.i=0;
+  stepState.timer=setInterval(()=>stepGo(stepState.i+1),2600);
+  stepCaption();
+  dirty2d=true;
+}
+function openSteps(){
+  if(!G)return;
+  stepState.on=true;
+  stepState.i=0;
+  stepState.list=stepsFor(S,G);
+  document.getElementById('stepbar').hidden=false;
+  document.getElementById('btnSteps').classList.add('on');
+  view.fit=true;
+  stepCaption();
+  dirty2d=true;
+}
+function closeSteps(){
+  stopStepTimer();
+  stepState.on=false;
+  document.getElementById('stepbar').hidden=true;
+  document.getElementById('btnSteps').classList.remove('on');
+  dirty2d=true;
 }
 
 function fitView(w,h){
@@ -1306,6 +1626,11 @@ function draw2D(){
   x.setTransform(1,0,0,1,0,0);
   x.clearRect(0,0,c.width,c.height);
   x.setTransform(dpr*k,0,0,-dpr*k,dpr*tx,dpr*ty);
+  const stepNow=stepState.on&&stepState.list[stepState.i];
+  if(stepNow&&!stepNow.final){
+    drawSteps(x,k,col,tx,ty,dpr);
+    return;
+  }
   const R=G.rect;
   if(S.lyStone){
     x.fillStyle=col('--stone');
@@ -1341,6 +1666,31 @@ function draw2D(){
     tracePaths(x,G.lights);
     x.fillStyle=col('--paper');
     x.fill('evenodd');
+  }
+  if(G.cnc&&S.cnc){
+    x.beginPath();
+    tracePaths(x,G.cnc.deep.concat(G.cnc.thin));
+    x.fillStyle=col('--warn');
+    x.globalAlpha=0.8;
+    x.fill('evenodd');
+    x.globalAlpha=1;
+    if(G.cnc.smallPaths.length){
+      x.beginPath();
+      tracePaths(x,G.cnc.smallPaths);
+      x.strokeStyle=col('--warn');
+      x.lineWidth=3/k;
+      x.stroke();
+    }
+    x.strokeStyle=col('--warn');
+    x.lineWidth=1.6/k;
+    G.cnc.deep.concat(G.cnc.thin).forEach(q=>{
+      let x0=1e18,x1=-1e18,y0=1e18,y1=-1e18;
+      q.forEach(v=>{if(v.X<x0)x0=v.X;if(v.X>x1)x1=v.X;if(v.Y<y0)y0=v.Y;if(v.Y>y1)y1=v.Y;});
+      const rad=Math.max(Math.hypot(x1-x0,y1-y0)/SC/2,7/k);
+      x.beginPath();
+      x.arc((x0+x1)/2/SC,(y0+y1)/2/SC,rad,0,TAU);
+      x.stroke();
+    });
   }
   x.beginPath();
   tracePaths(x,G.lights);
@@ -1631,6 +1981,7 @@ function refresh(){
       return;
     }
     dirty3d=true;dirty2d=true;
+    if(stepState.on)rebuildSteps();
     document.getElementById('analysis').innerHTML=analysisHtml();
   }
   if(dirty3d)build3D();
@@ -1668,13 +2019,14 @@ const HELP_START=`
 <li>Press <b>Shuffle</b> for a new variation and <b>Back</b> to undo it.</li>
 <li>Use <b>Export</b> to save the window as SVG or DXF.</li>
 </ol>
-<h2>Six things to try</h2>
+<h2>Seven things to try</h2>
 <ul>
 <li><b>Lancet to drop.</b> Head: Pointed. Drag <i>Radius ÷ span</i> from 0.5 (round) through 1.0 (equilateral) to 2.0 (tall lancet).</li>
 <li><b>Fit circles into a gap.</b> Pattern: Geometric. Raise <i>Packed circles</i> and watch each one grow until it touches its neighbours.</li>
 <li><b>Count the petals.</b> Head: Circular, Pattern: Rose. Move <i>Petals</i> from 6 to 16 and see the petal radius shrink.</li>
 <li><b>Cut through it.</b> Press Section in the 3D pane to see the wall, tracery and glass in profile.</li>
 <li><b>Light and shadow.</b> In 3D form, move <i>Sun azimuth</i> and <i>Sun elevation</i> and watch the tracery shade the glass.</li>
+<li><b>Watch it being drawn.</b> Press <i>Steps</i> above the 2D view. Each step adds one line or circle and explains it.</li>
 <li><b>Let it surprise you.</b> Press <i>Shuffle all</i> a few times. Anything you like can be refined by hand, and Back returns to what you had.</li>
 </ul>
 <h2>Three reading levels</h2>
@@ -1689,7 +2041,7 @@ const HELP_CONTROLS=[
 ['Shuffle','Makes a new variation of the current head and pattern: proportions, number of lights, bar width and seeds change within sensible ranges. The size, units and 3D settings stay. Variations that cannot be drawn, or that leave almost no glass or almost no stone, are discarded and another is tried. Press it repeatedly to see many quick samples.'],
 ['Shuffle all','As Shuffle, but also picks a new head and a new pattern and varies the height by up to about 10%.'],
 ['Back','Steps back to the design before the last shuffle, up to 20 steps. Presets and manual changes are not recorded, so Back only returns to designs a shuffle replaced.'],
-['Export','SVG: 2D linework in millimetres. DXF 2D elevation: the opening, wall, tracery and glass outlines plus the construction circles and lines, on separate layers. DXF 3D model: the wall, tracery and glass as triangle meshes. DXF files follow the Metric or Imperial setting and are written in millimetres or inches.'],
+['Export','SVG: 2D linework in millimetres. DXF 2D elevation: the opening, wall, tracery and glass outlines plus the construction circles and lines, on separate layers. DXF 3D model: the wall, tracery and glass as triangle meshes. DXF files follow the Metric or Imperial setting and are written in millimetres or inches. Copy share link puts the current design into a web address that anyone can open.'],
 ['Reset','Returns every setting to its default after asking you to confirm.'],
 ['Imperial / Metric','Switches every displayed length between feet-inches and millimetres. The window itself does not change.'],
 ['Light / Dark','Switches the colour theme.']]],
@@ -1729,11 +2081,16 @@ const HELP_CONTROLS=[
 ['Edge lines and Wireframe','Draw the outlines of the stone, or show the mesh.'],
 ['Section cut and Cut position','Slices the model on a vertical plane and removes everything on one side. Cut position moves the plane left or right of the centreline. The Section button turns the cut on and views it from the side. Front and Oblique turn it off.'],
 ['Sun azimuth and elevation','Direction of the light that casts shadows from the tracery onto the glass.']]],
+['CNC check',[
+['Check for CNC cutting','Turns the check on. Problem spots are painted red on the 2D view and listed in the analysis strip, and the 2D DXF gains a CNC_FLAGS layer.'],
+['Cutter diameter and Minimum stone web','The size of the round bit, and the thinnest stone bar you will accept. Metric or Imperial, like any length.'],
+['Find the largest cutter that works','Searches for the biggest bit that can enter every light and reach every part of it. It takes a moment on dense patterns.']]],
 ['Typing values',[
 ['Click a number to type','Every number beside a slider can be typed. Press Enter or click away to apply, Escape to cancel. You can go beyond the slider\'s range, within safe limits, and the slider stretches to include your value.'],
 ['Lengths','Metric: 1130, 1130 mm, 113 cm, 1.13 m. Imperial: 3\' 8 1/2", 3\'-8 1/2", 3 ft 8.5 in, 44.5 in, 6\'. Either system works whatever the display is set to. A bare number means millimetres in Metric and inches in Imperial.'],
 ['Other values','Ratios and angles take plain numbers (0.3, 45 or 45°) and fractions such as 1/3. Counts and seeds are rounded to whole numbers. Foil and cusp counts accept none.']]],
 ['Views',[
+['Steps','In the 2D pane. Plays the construction of the window step by step, with a caption for each step. Back and Next, the arrow keys, or Play move through it, and Escape or Close returns to the normal view.'],
 ['2D layers','Toggle stone, glass, construction geometry and dimension lines. Drag to pan, scroll or pinch to zoom, double-click or press Fit to reset.'],
 ['3D view','Drag to orbit, scroll to zoom. Front and Oblique snap to standard views. Section cuts the model along a vertical plane and shows the profile through the wall, tracery and glass in solid colour. Reset view returns to the oblique view with the section cut off, wireframe off and the layers together.'],]]
 ];
@@ -1752,6 +2109,11 @@ const HELP_NUMBERS=[
 ['Bar · frame','Bar width and the effective frame width, which is never less than half a bar.'],
 ['Packed circles','How many circles were placed and their radii as a fraction of the span.'],
 ['Petal radius','For rose windows, petal radius as a fraction of the rose radius, from the formula in the rose topic.'],
+['CNC cutter','The cutter diameter and minimum stone web being checked.'],
+['Lights too small','How many lights the cutter cannot fit into at all. These are outlined in red.'],
+['Tight points and slots','Parts of lights the cutter cannot reach, such as very sharp tips and narrow slots, shown in red. Ordinary square corners are not counted, since they just round to the cutter radius.'],
+['Thin stone','Places where the stone is thinner than the minimum web, shown in red.'],
+['Largest clean cutter','The biggest bit that cuts every light cleanly, after pressing Find the largest cutter that works.'],
 ['Hub radius','For wheel windows, the central hub as a fraction of the rose radius.'],
 ['Grid, Columns, Rows','Grid size. With a Modulor scheme, the series terms used (in cm, or inches in imperial) and the scale factor needed to fit your opening.'],
 ['Custom widths, Custom heights','The sizes you entered, and the scale applied if they did not add up to the opening.'],
@@ -1808,6 +2170,8 @@ const HELP_LIMITS=[
 'Modulor fits scale a run of series values to your opening. A scale factor far from 1.000 means the result is proportioned like the Modulor but not dimensioned like it.',
 'The Mondrian composition is a generated study in his manner. It is not a copy or measurement of any painting.',
 'Imperial display rounds to 1/16 inch below 24 inches and 1/8 inch above. Values are converted from millimetres, which remain the working unit.',
+'The CNC check looks at the flat 2D outline only. It does not know about cutter path order, tool length, stepover, the grain or cracking of the stone, or how the piece is held.',
+'Share links carry the design settings only. They do not carry your units, theme, saved designs, or the section cut, exploded layers and wireframe. Links over about 2,000 characters may be cut off by some chat apps.',
 '3D glass is a simple translucent slab. Colours are illustrative, not a daylight or colour-rendering simulation.',
 'DXF export is the older AutoCAD R12 format so that nearly any CAD program opens it. Curves are polylines of short straight segments (about 4° of arc), except construction circles, which are true circles. The 3D file is a triangle mesh on three layers, not solids, and individual glass colours are not carried across. It always exports the complete model, ignoring the section cut and exploded layers.'
 ];
@@ -1960,6 +2324,34 @@ d:`<p>It drops with thick bars, small cells and jali screens, and rises with pla
 p:`<p><code>ratio = A(L) / A(O)</code>. Areas are Clipper's signed polygon areas, where holes subtract, taken in integer units and divided by 100² to give mm². It is measured against the opening, not the whole wall, and ignores glazing rebates.</p>`,
 live:()=>`${(G.glaze*100).toFixed(1)}% glass, ${(100-G.glaze*100).toFixed(1)}% stone.`},
 
+{id:'steps',t:'Step-by-step construction',
+s:`<p>Press <b>Steps</b> above the 2D view to watch the window drawn the way a mason or draughtsman would draw it, with a straightedge and a compass. Each step adds one line or circle and says in words what it does and why. Use Next and Back, the arrow keys, or Play. The last step shows the finished glass and stone.</p>`,
+d:`<p>The steps follow the head you have chosen. A pointed arch needs two compass centres on the springing line, a four-centred arch needs four, a horseshoe lifts its centre above the line. Letters mark the points named in the captions: A and B are the springings, D is the apex, and the other letters are compass centres. After the head come the steps for the pattern: the guides, the shapes drawn on the bar centre lines, and the shrink by half a bar that leaves the bars. The numbers in the captions are your window's, and the steps redraw if you change a slider while they are open.</p>`,
+p:`<p>Every construction is generated from the same radii, centres and angles the geometry uses (the head topics give the formulas), not drawn separately, so the picture cannot drift from the result. The regression suite checks this for 25 head variants: the highlighted arcs of the head steps must lie on the real outline, within 0.09% of their radius plus 0.8 mm, and together must cover it.</p><p>Auxiliary-circle construction is used for the ellipse, equal-ordinate points for the parabola, and a flipped hanging chain for the catenary. If a four-centred or ogee head has no valid curve and the app falls back to an equilateral arch, the steps show the arch that is actually drawn.</p>`,
+live:()=>{
+  const n=stepsFor(S,G).length;
+  return `Your window has ${n} steps: ${G.op.info.name.toLowerCase()}${S.pattern==='plain'?'':', then the '+S.pattern+' pattern'}, then the bars.`;
+}},
+
+{id:'share',t:'Share by link',
+s:`<p>Copy share link in the Export menu puts your window into a web address. Anyone who opens it sees the same window. The link holds no file and sends nothing to a server. It is just your settings packed into the address.</p>`,
+d:`<p>The link holds only the settings that differ from the defaults, so it stays short. It does not include the section cut, exploded layers, wireframe, your units, your theme or your saved designs. When someone opens a link, their own design is kept and the Back button returns to it. A link that cannot be read changes nothing and says so. After loading, the link is cleared from the address bar, so refreshing returns to your saved work and not to the link.</p>`,
+p:`<p>Format: <code>#d=</code> followed by base64url of UTF-8 JSON <code>{"v":1,"s":{…}}</code>, where s holds only keys that differ from the defaults. The text after # is never sent to the server. On load the object goes through the same sanitiser as an imported preset: unknown keys are dropped, selects must be a real option, numbers are clamped to the safe limits, counts are rounded, lists are validated, and the code is capped at 20,000 characters.</p><p>Typical links are a few hundred characters. Browsers accept far more, but some chat apps cut links near 2,000.</p>`,
+live:()=>{
+  const u=shareUrl();
+  return `Your link would be ${u.length-u.indexOf('#d=')} characters long (${Object.keys(shareData().s).length} settings differ from the defaults).`;
+}},
+
+{id:'cnc',t:'CNC check',
+s:`<p>A CNC router cuts with a round bit. A round bit cannot make a sharp inside corner, so it leaves a small curve. It cannot go into a slot narrower than itself, and it cannot cut a very sharp point. TRACERY checks your window against the bit you choose and paints the trouble spots red. It also checks that no stone is so thin it would snap.</p>`,
+d:`<p>Turn on <b>Check for CNC cutting</b>, then set the <b>cutter diameter</b> and the <b>minimum stone web</b>, the thinnest bar you will accept. There are three results. <b>Lights too small</b> are outlined in red: the cutter does not fit inside at all. <b>Tight points and slots</b> are filled red: parts of a light the cutter cannot reach, such as the very sharp tip of a star or a narrow slot. Ordinary square corners are not flagged, because the cutter will simply round them to its own radius. <b>Thin stone</b> is filled red where the stone is narrower than the minimum web.</p><p><b>Find the largest cutter that works</b> searches for the biggest bit that cuts every light cleanly. The red areas also go to the CNC_FLAGS layer of the 2D DXF.</p>`,
+p:`<p>Let L be the lights (the regions to be cut out) and r = D/2. What a round cutter can reach is the morphological opening <code>L_r = (L ⊖ r) ⊕ r</code>, computed with Clipper offsets. The uncut residue is <code>L \\ L_r</code>. A 90° inside corner leaves <code>r²(1 − π/4) ≈ 0.215 r²</code>, all within 0.41 r of L_r, which is ordinary and not flagged.</p><p>Flagged is the part of the residue further than r from L_r, <code>(L \\ L_r) \\ (L_r ⊕ r)</code>, above 0.05 r² in area. That catches tips sharper than about 60° and slots too narrow to enter. A light is too small if <code>L ⊖ r</code> is empty. Thin stone applies the same test to the stone <code>T = O \\ L</code> with half-width w/2 and a threshold of 0.05 w². The largest cutter is found by bisection (12 steps) on r from 0.25 mm up to min(span/2, 400 mm), for no light too small and no flagged residue.</p><p>The check examines the 2D outline only. It ignores cutter path order, tool length, stepover, stone grain and cracking.</p>`,
+live:()=>{
+  if(!G.cnc)return 'Turn on Check for CNC cutting under CNC check to see your numbers here.';
+  const c=G.cnc;
+  return `Cutter ${fmtLenEdit(c.D)}, web ${fmtLenEdit(c.web)}: ${c.small} light${c.small===1?'':'s'} too small, ${c.deepN} tight point${c.deepN===1?'':'s'} or slot${c.deepN===1?'':'s'}, ${c.thinN} thin place${c.thinN===1?'':'s'}.`;
+}},
+
 {id:'export',t:'Exporting: SVG and DXF',
 s:`<p>Exporting saves your window as a drawing or a model that other programs can open. SVG and the 2D DXF are flat drawings. The 3D DXF is a model made of many small flat triangles.</p>`,
 d:`<p>SVG is always in millimetres. DXF files follow the Metric or Imperial setting and are written in millimetres or inches, and the file name ends -mm or -in. Set the units in your CAD import dialog, because the older format used cannot store them.</p><p>The <b>2D DXF</b> has five layers: OPENING, WALL, TRACERY (the stone profile with the glass cut out, useful for CNC or laser cutting), GLASS, and CONSTRUCTION (dashed compass circles, radii and centres). The <b>3D DXF</b> has WALL, TRACERY and GLASS. Glass colours are not exported, and the 3D file always holds the whole model, ignoring the section cut and exploded layers.</p>`,
@@ -1993,7 +2385,7 @@ function helpLiveHtml(t){
   let txt='';
   try{txt=t.live?t.live():'';}catch(e){txt='';}
   if(!txt)return '';
-  const off=/^(Choose|Set) /.test(txt);
+  const off=/^(Choose|Set|Turn on) /.test(txt);
   return `<div class="live${off?' off':''}"><b>${off?'Try it':'Your window'}</b>${escapeHtml(txt)}</div>`;
 }
 
@@ -2089,8 +2481,15 @@ function helpInit(){
     openHelp('math',helpTopicFor(b.getAttribute('data-help')));
   });
   document.addEventListener('keydown',e=>{
-    if(e.key!=='Escape')return;
-    if(!document.getElementById('help').hidden)closeHelp();
+    const typing=e.target&&e.target.matches&&e.target.matches('input,select,textarea');
+    if(e.key==='Escape'){
+      if(!document.getElementById('help').hidden)closeHelp();
+      else if(stepState.on)closeSteps();
+      return;
+    }
+    if(!stepState.on||typing||!document.getElementById('help').hidden)return;
+    if(e.key==='ArrowRight'){e.preventDefault();stopStepTimer();stepGo(stepState.i+1);}
+    else if(e.key==='ArrowLeft'){e.preventDefault();stopStepTimer();stepGo(stepState.i-1);}
   });
 }
 
@@ -2228,7 +2627,7 @@ function editList(k,text){
 }
 
 function afterEdit(k,p){
-  if(k==='arch'||k==='pattern'||k==='roseStyle'||k==='latCell'||k==='warp'||k==='subFoils'||k==='secOn'||k==='scheme'||k==='rowScheme'){syncControls();}
+  if(p.t==='select'||p.t==='check'||k==='warp'||k==='subFoils'){syncControls();}
   else setValText(k);
   if(k==='arch'||k==='span'||k==='height')view.fit=true;
   saveState();
@@ -2280,6 +2679,8 @@ function buildControls(){
     sec.p.forEach(p=>{
       if(p.t==='range'){
         html+=`<div class="row" data-k="${escapeAttr(p.k)}"><label for="c_${escapeAttr(p.k)}">${escapeHtml(p.l)}</label><input class="val" id="v_${escapeAttr(p.k)}" type="text" inputmode="${p.u==='mm'?'text':'decimal'}" autocomplete="off" spellcheck="false" aria-label="${escapeAttr(p.l)} value" title="${p.u==='mm'?'Click to type a length: 1130, 113 cm, 3&#39; 8 1/2&quot; or 44.5 in':'Click to type a value'}"><input id="c_${escapeAttr(p.k)}" type="range" min="${p.min}" max="${p.max}" step="${p.step}"></div>`;
+      }else if(p.t==='action'){
+        html+=`<div class="row act" data-k="${escapeAttr(p.k)}"><button id="c_${escapeAttr(p.k)}">${escapeHtml(p.l)}</button></div>`;
       }else if(p.t==='list'){
         html+=`<div class="row" data-k="${escapeAttr(p.k)}"><label for="c_${escapeAttr(p.k)}">${escapeHtml(p.l)}</label><input class="lst" id="c_${escapeAttr(p.k)}" type="text" inputmode="text" autocomplete="off" spellcheck="false" aria-label="${escapeAttr(p.l)}" title="Separate sizes with commas, for example 300, 450, 300 or 1&#39; 0&quot;, 1&#39; 6&quot;. Bare numbers are millimetres in Metric and inches in Imperial."></div>`;
       }else if(p.t==='select'){
@@ -2322,6 +2723,7 @@ function buildControls(){
     }
   },true);
   side.addEventListener('click',e=>{
+    if(e.target.closest('#c_cncFind')){cncFindLargest();return;}
     const all=e.target.closest('#btnCollapse,#btnExpand');
     if(!all)return;
     const open=all.id==='btnExpand';
@@ -2339,7 +2741,7 @@ function onControl(e){
   if(id.indexOf('c_')!==0)return;
   const k=id.slice(2);
   const p=findParam(k);
-  if(!p||p.t==='list')return;
+  if(!p||p.t==='list'||p.t==='action')return;
   if(p.t==='range')S[k]=parseFloat(e.target.value);
   else if(p.t==='check')S[k]=e.target.checked;
   else S[k]=e.target.value;
@@ -2353,7 +2755,7 @@ function syncControls(){
     if(!el)return;
     if(p.t==='check')el.checked=!!S[p.k];
     else if(p.t==='range')fitSlider(p);
-    else if(p.t!=='list')el.value=S[p.k];
+    else if(p.t!=='list'&&p.t!=='action')el.value=S[p.k];
     setValText(p.k);
     const row=el.closest('.row');
     if(row)row.hidden=p.show?!p.show(S):false;
@@ -2514,7 +2916,7 @@ function shuffleBack(){
 
 function paramKeys(){
   const o=[];
-  SECTIONS.forEach(sec=>sec.p.forEach(p=>o.push(p.k)));
+  SECTIONS.forEach(sec=>sec.p.forEach(p=>{if(p.t!=='action')o.push(p.k);}));
   return o;
 }
 
@@ -2582,6 +2984,80 @@ function fillPresetMenu(){
   h+='<option value="imp">Import presets…</option></optgroup>';
   sel.innerHTML=h;
   sel.value='';
+}
+
+
+function b64uEncode(str){
+  return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function b64uDecode(str){
+  let t=str.replace(/-/g,'+').replace(/_/g,'/');
+  while(t.length%4)t+='=';
+  return decodeURIComponent(escape(atob(t)));
+}
+
+function shareData(){
+  const snap=snapshotDesign();
+  const diff={};
+  Object.keys(snap).forEach(k=>{
+    if(JSON.stringify(snap[k])!==JSON.stringify(DEFAULT[k]))diff[k]=snap[k];
+  });
+  return {v:1,s:diff};
+}
+
+function shareUrl(){
+  return location.href.split('#')[0]+'#d='+b64uEncode(JSON.stringify(shareData()));
+}
+
+function parseShare(code){
+  try{
+    if(!code||code.length>20000)return null;
+    const o=JSON.parse(b64uDecode(code));
+    if(!o||o.v!==1||!o.s||typeof o.s!=='object'||Array.isArray(o.s))return null;
+    return sanitizeDesign(o.s);
+  }catch(e){
+    return null;
+  }
+}
+
+function loadShared(design){
+  shufHist.push(Object.assign({},S));
+  if(shufHist.length>20)shufHist.shift();
+  S=Object.assign({},DEFAULT,design);
+  fixLists();
+  view.fit=true;
+  needCam=true;
+  syncControls();
+  saveState();
+  schedule(true);
+  updateBackBtn();
+}
+
+function checkShareHash(){
+  const h=location.hash;
+  if(h.indexOf('#d=')!==0)return false;
+  const d=parseShare(h.slice(3));
+  try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+  if(!d){toast('That share link could not be read');return true;}
+  loadShared(d);
+  toast('Loaded a shared design. Back returns to yours');
+  return true;
+}
+
+async function copyShareLink(){
+  const url=shareUrl();
+  let ok=false;
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(url);
+      ok=true;
+    }
+  }catch(e){}
+  if(!ok){
+    await askDialog({message:'Copy this link to share the design',input:true,value:url,confirmLabel:'Done'});
+    return;
+  }
+  toast('Share link copied'+(url.length>6000?' ('+url.length+' characters, long for some apps)':''));
 }
 
 function askDialog(opt){
@@ -2780,12 +3256,14 @@ function dxf2dText(){
   const g=(c,v)=>{L.push(c);L.push(v);};
   const n=v=>(v*u.f).toFixed(u.d);
   const layers=[['OPENING',5],['WALL',8],['TRACERY',2],['GLASS',4],['CONSTRUCTION',3,'DASHED']];
+  if(G.cnc)layers.push(['CNC_FLAGS',1]);
   dxfHead(g,u,layers,'TRACERY v'+APP_VERSION+' 2D elevation, units: '+u.name+', X across, Y up');
   const path=p=>p.map(q=>[n(q.X/SC),n(q.Y/SC)]);
   G.op.O.forEach(p=>dxfPoly(g,'OPENING',path(p)));
   G.surround.forEach(p=>dxfPoly(g,'WALL',path(p)));
   G.tracery.forEach(p=>dxfPoly(g,'TRACERY',path(p)));
   G.lights.forEach(p=>dxfPoly(g,'GLASS',path(p)));
+  if(G.cnc)G.cnc.deep.concat(G.cnc.thin).concat(G.cnc.smallPaths).forEach(p=>dxfPoly(g,'CNC_FLAGS',path(p)));
   G.cons.forEach(o=>{
     if(o.k==='c'){g(0,'CIRCLE');g(8,'CONSTRUCTION');g(10,n(o.cx));g(20,n(o.cy));g(30,0);g(40,n(o.r));}
     else if(o.k==='l'){g(0,'LINE');g(8,'CONSTRUCTION');g(10,n(o.x0));g(20,n(o.y0));g(30,0);g(11,n(o.x1));g(21,n(o.y1));g(31,0);}
@@ -2962,6 +3440,7 @@ function initUi(){
     ex.value='';
     if(v==='svg')exportSvg();
     else if(v==='dxf2d'||v==='dxf3d')exportDxf(v);
+    else if(v==='share')copyShareLink();
   });
   document.getElementById('btnReset').addEventListener('click',async()=>{
     const ok=await confirmDialog('Reset every parameter to its default?','Reset');
@@ -2973,6 +3452,11 @@ function initUi(){
   });
   document.getElementById('btnTheme').addEventListener('click',toggleTheme);
   document.getElementById('btnSide').addEventListener('click',toggleSide);
+  document.getElementById('btnSteps').addEventListener('click',()=>{if(stepState.on)closeSteps();else openSteps();});
+  document.getElementById('stepPrev').addEventListener('click',()=>{stopStepTimer();stepGo(stepState.i-1);});
+  document.getElementById('stepNext').addEventListener('click',()=>{stopStepTimer();stepGo(stepState.i+1);});
+  document.getElementById('stepPlay').addEventListener('click',stepPlay);
+  document.getElementById('stepClose').addEventListener('click',closeSteps);
   document.getElementById('btnUnits').addEventListener('click',toggleUnits);
   document.getElementById('btnFit').addEventListener('click',()=>{view.fit=true;dirty2d=true;});
   document.getElementById('btnView3d').addEventListener('click',resetView3d);
@@ -3006,6 +3490,8 @@ function start(){
   try{sideState=localStorage.getItem(SIDE_KEY)||'on';}catch(e){}
   applySide(sideState!=='off');
   syncControls();
+  checkShareHash();
+  window.addEventListener('hashchange',checkShareHash);
   setupPointer();
   helpInit();
   init3D();
