@@ -252,7 +252,7 @@ footer a:hover{color:var(--accent)}
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-const APP_VERSION='1.12.1';
+const APP_VERSION='1.12.2';
 const SC=100;
 const TAU=Math.PI*2;
 const PHI=(1+Math.sqrt(5))/2;
@@ -267,6 +267,8 @@ const THEME_KEY='tracery.theme';
 const UNITS_KEY='tracery.units';
 const SIDE_KEY='tracery.side';
 const SEC_KEY='tracery.secopen';
+const REV_KEY='tracery.defaultsrev';
+const DEFAULTS_REV=2;
 const UPRE_KEY='tracery.userpresets';
 const VIEW_KEYS=['secOn','secX','explode','wire'];
 let UNITS='metric';
@@ -2784,6 +2786,15 @@ function loadState(){
   fixLists();
 }
 
+function applyDefaultsRevision(){
+  try{
+    if(localStorage.getItem(REV_KEY)===String(DEFAULTS_REV))return;
+    S.stained=false;
+    localStorage.setItem(REV_KEY,String(DEFAULTS_REV));
+    saveState();
+  }catch(e){}
+}
+
 function fixLists(){
   ['customCols','customRows'].forEach(k=>{
     const a=S[k];
@@ -3627,6 +3638,7 @@ function initUi(){
 
 function start(){
   loadState();
+  applyDefaultsRevision();
   loadUserPresets();
   let theme='dark';
   try{theme=localStorage.getItem(THEME_KEY)||'dark';}catch(e){}
